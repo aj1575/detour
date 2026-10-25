@@ -48,13 +48,18 @@ export async function POST(request: Request) {
   });
   if (!upload.ok) return Response.json({ error: "Convex storage did not accept the photo." }, { status: 502 });
   const { storageId } = (await upload.json()) as { storageId: Id<"_storage"> };
-  const saved = await client.mutation(api.photos.add, {
-    tripId: trip,
-    storageId,
-    sharedBy: sharedBy.slice(0, 80),
-    width: measured.width,
-    height: measured.height,
-    look: measured.look,
-  });
+  let saved;
+  try {
+    saved = await client.mutation(api.photos.add, {
+      tripId: trip,
+      storageId,
+      sharedBy: sharedBy.slice(0, 80),
+      width: measured.width,
+      height: measured.height,
+      look: measured.look,
+    });
+  } catch {
+    return Response.json({ error: "Too many photos at once. Try again in a minute." }, { status: 429 });
+  }
   return Response.json({ ...saved, look: measured.look });
 }

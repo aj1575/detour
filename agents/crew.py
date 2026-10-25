@@ -1187,7 +1187,7 @@ async def id_cards_reply() -> ChatMessage:
             {"type": "group", "direction": "row", "gap": 6, "children": badges},
         ]
         if last:
-            column.append({"type": "text", "value": f"Last: {last['text'][:70]}", "style": "muted"})
+            column.append({"type": "text", "value": f"Last: {read_context(last['text'])[2][:70]}", "style": "muted"})
         rows.append({"children": [{"type": "group", "direction": "column", "gap": 4, "children": column}]})
     card = CustomCardPayload.model_validate({
         "root": {
@@ -1289,9 +1289,15 @@ async def captain_chat(ctx: Context, sender: str, msg: ChatMessage):
     if not text:
         return
     if trip and trip["stage"] == "dates" and choose(text) in ("", "Trip"):
-        trip["dates"], trip["stage"] = text, "details"
+        # "Nov 14 to 16, from San Jose with Jordan": the dates are the part before from/with.
+        split = re.search(r"[\s,]*\b(?:from|with)\b", text, re.I)
+        dates, rest = (text[: split.start()], text[split.start() :].strip(" ,")) if split else (text, "")
+        trip["dates"], trip["stage"] = dates.strip(" ,.") or text, "details"
         await save_trip(ctx, sender, trip)
-        await ctx.send(sender, outbound(f"{trip['end']}, {text}. " + trip_question(trip), end=False))
+        if rest and has_details(rest, trip):
+            await plan_trip(ctx, sender, rest, loose=True)
+        else:
+            await ctx.send(sender, outbound(f"{trip['end']}, {trip['dates']}. " + trip_question(trip), end=False))
         return
     ready = READY.search(plain(text).lower())
     if trip is None and ready:

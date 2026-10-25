@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@convex-dev/presence": "^0.4.0",
+    "@convex-dev/rate-limiter": "0.4.2",
     "@factory/droid-sdk": "^0.10.0",
     "convex": "^1.48.0",
     "droid": "^0.249.0",

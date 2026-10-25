@@ -3,6 +3,7 @@ import type { QueryCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 import { kind } from "./schema";
+import { limits } from "./limits";
 
 const option = v.object({
   name: v.string(),
@@ -60,6 +61,8 @@ export const vote = mutation({
       .withIndex("by_name", (q) => q.eq("tripId", args.tripId).eq("kind", args.kind).eq("name", args.name))
       .first();
     if (!item) return { ok: false as const, error: `${args.name} is not on this trip's list.` };
+    const { ok } = await limits.limit(ctx, "vote", { key: `${args.tripId}:${args.voter}` });
+    if (!ok) return { ok: false as const, error: "That's a lot of votes at once. Try again in a few seconds." };
     const previous = await ctx.db
       .query("votes")
       .withIndex("by_voter", (q) => q.eq("tripId", args.tripId).eq("kind", args.kind).eq("voter", args.voter))

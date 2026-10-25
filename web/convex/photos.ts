@@ -2,6 +2,7 @@ import { mutation, query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { v } from "convex/values";
+import { limits } from "./limits";
 
 const look = v.object({
   hue: v.number(),
@@ -32,6 +33,7 @@ export const add = mutation({
     look,
   },
   handler: async (ctx, args) => {
+    await limits.limit(ctx, "photo", { key: args.tripId, throws: true });
     const photoId = await ctx.db.insert("photos", { ...args, createdAt: Date.now() });
     const count = (
       await ctx.db

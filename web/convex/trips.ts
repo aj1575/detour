@@ -3,6 +3,7 @@ import type { QueryCtx } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 import { v } from "convex/values";
 import { day } from "./schema";
+import { internal } from "./_generated/api";
 
 // A friend who messages Yatra within this window joins the active trip.
 const JOIN_WINDOW_MS = 12 * 60 * 60 * 1000;
@@ -60,7 +61,21 @@ export const current = query({
 export const setHere = mutation({
   args: { tripId: v.id("trips"), lat: v.number(), lng: v.number() },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.tripId, { hereLat: args.lat, hereLng: args.lng, hereAt: Date.now() });
+    const hereAt = Date.now();
+    await ctx.db.patch(args.tripId, { hereLat: args.lat, hereLng: args.lng, hereAt });
+    // Forget this exact location six hours from now. The cron below is the backstop.
+    await ctx.scheduler.runAfter(LOCATION_TTL_MS, internal.trips.forgetLocation, { tripId: args.tripId, hereAt });
+  },
+});
+
+export const forgetLocation = internalMutation({
+  args: { tripId: v.id("trips"), hereAt: v.number() },
+  handler: async (ctx, { tripId, hereAt }) => {
+    const trip = await ctx.db.get(tripId);
+    // A newer location has its own scheduled job.
+    if (trip?.hereAt === hereAt) {
+      await ctx.db.patch(tripId, { hereLat: undefined, hereLng: undefined, hereAt: undefined });
+    }
   },
 });
 

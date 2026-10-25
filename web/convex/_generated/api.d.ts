@@ -10,6 +10,7 @@
 
 import type * as actions from "../actions.js";
 import type * as crons from "../crons.js";
+import type * as limits from "../limits.js";
 import type * as messages from "../messages.js";
 import type * as monitor from "../monitor.js";
 import type * as options from "../options.js";
@@ -27,6 +28,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   actions: typeof actions;
   crons: typeof crons;
+  limits: typeof limits;
   messages: typeof messages;
   monitor: typeof monitor;
   options: typeof options;
@@ -64,4 +66,5 @@ export declare const internal: FilterApi<
 
 export declare const components: {
   presence: import("@convex-dev/presence/_generated/component.js").ComponentApi<"presence">;
+  rateLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
 };
