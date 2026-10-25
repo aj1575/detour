@@ -25,7 +25,7 @@ The demo, in order:
 
 | Say this | What happens |
 | --- | --- |
-| `Let's plan a trip` | Atlas shows the Detour boarding pass card. Tap a gate such as Big Sur, then give your dates. Or tap **Start my trip** |
+| `Let's plan a trip` | Atlas shows the trip card. Tap a destination such as Big Sur, then give your dates. Or tap **Start my trip** |
 | `from San Jose with Jordan and Priya` | Atlas explains how to bring them into the chat |
 | `we're all in` (from a friend) | Atlas welcomes the group. The friend joins the same trip |
 | `where should we stay?` | StayScout sends a card of places near the destination. Everyone taps **Vote for this** |
@@ -65,7 +65,7 @@ Each agent's Agentverse profile lives in the repo: the description and starter p
 
 ## How it uses each sponsor
 
-**Fetch.ai.** Twelve uAgents with the Agent Chat Protocol and mailboxes on Agentverse. The whole flow runs inside one ASI:One conversation. That includes group chats: each friend who messages Atlas joins the same trip. It uses Interactive Cards (a custom boarding pass card, voting carousels, a custom itinerary card, a menu carousel, and a payment review card) and the Fetch Payment Protocol, verified against Stripe before it completes.
+**Fetch.ai.** Twelve uAgents with the Agent Chat Protocol and mailboxes on Agentverse. The whole flow runs inside one ASI:One conversation. That includes group chats: each friend who messages Atlas joins the same trip. It uses Interactive Cards (a custom trip starter card, voting carousels, a custom itinerary card, a menu carousel, and a payment review card) and the Fetch Payment Protocol, verified against Stripe before it completes.
 
 **Convex.** Convex is the agents' shared memory and the board's live backend:
 - Atlas's trip state (stage, route, dates, people, chat members) is stored in Convex. A restart of the agents loses nothing, and every friend in the group chat resolves to the same trip (`convex/trips.ts`).

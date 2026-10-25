@@ -169,16 +169,18 @@ async def script():
         await asyncio.sleep(0.5)
     await asyncio.sleep(3)
 
-    # The boarding pass's Start my trip button opens onboarding straight away.
+    # The trip card's Start my trip button opens onboarding straight away.
     await say(lead, selection={"action": "start_trip"}, expect="that's great")
 
-    # Trip onboarding through the boarding pass card.
-    await say(lead, "@atlas-guide Let's plan a trip", expect="BOARDING PASS")
+    # Trip onboarding through the trip card.
+    await say(lead, "@atlas-guide Let's plan a trip", expect="Plan a road trip together")
     await say(lead, selection={"content_id": "big_sur_drive", "category": "coastal_drive", "destination": "Big Sur"},
               expect="What dates")
     await say(lead, "Nov 7 to Nov 9", expect="starting from")
-    await say(lead, "plan a trip", expect="BOARDING PASS")  # the old bug saved this as the starting city
-    await say(lead, "from San Jose with Jordan and Priya", expect="we're all in")
+    await say(lead, "plan a trip", expect="Plan a road trip together")  # the old bug saved this as the starting city
+    # Answers in pieces, the way people really type them: say back what was understood, ask only what's left.
+    await say(lead, "unistudy is coming with me .", expect="Unistudy is coming")
+    await say(lead, "San Jose", expect="we're all in")
     await say(friend, "we're all in", expect="let's go")
 
     # Group decisions: stays and things to do, voted by two people.

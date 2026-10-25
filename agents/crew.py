@@ -844,8 +844,16 @@ captain_protocol = Protocol(spec=chat_protocol_spec)
 crews: dict[str, dict] = {}  # trip id -> trip
 chats: dict[str, str] = {}  # ASI:One sender -> trip id
 spots: dict[str, str] = {}
-READY = re.compile(r"\b(all in|all here|all set|every(one|body)'?s? (is )?(in|here)|we('?re| are) (all )?(in|here)|joined)\b")
+READY = re.compile(
+    r"\b(all in|all here|all set|every(one|body)'?s? (is )?(in|here)|we('?re| are) (all )?(in|here)|joined"
+    r"|already (added|invited|here|in (the|this) (chat|group))|(she|he|they)('?s|'?re| is| are) (already )?(here|in))\b"
+)
 SOLO = re.compile(r"\b(just me|only me|solo|alone|by myself)\b")
+DATEISH = re.compile(
+    r"\d|\b(today|tonight|tomorrow|day after|weekend|next|this|week|month|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec"
+    r"|mon|tue|wed|thu|fri|sat|sun)[a-z]*\b",
+    re.I,
+)
 STOP = r"(?=\s+(?:with|along|on|and)\b|[,.?!]|$)"
 WITH = re.compile(r"\bwith\s+(.+?)(?=\s+(?:from|to|along)\b|[.?!]|$)", re.I)
 FROM_TO = re.compile(rf"\bfrom\s+(.+?)\s+to\s+(.+?){STOP}", re.I)
@@ -949,17 +957,27 @@ def has_details(text: str, trip: dict) -> bool:
 
 
 def trip_question(trip: dict) -> str:
+    # Say back what we already understood, then ask only for what's missing.
+    known = []
+    if "people" in trip:
+        people = trip["people"]
+        known.append(f"{joined(people)} {'is' if len(people) == 1 else 'are'} coming" if people else "it's just you")
+    if "start" in trip:
+        known.append(f"starting from {trip['start']}")
+    # (what to tell me, the same as a question, an example answer)
     missing = []
     if "start" not in trip:
-        missing.append("where you're starting from")
+        missing.append(("where you're starting from", "where are you starting from", "from San Jose"))
     if "end" not in trip:
-        missing.append("where you're headed")
+        missing.append(("where you're headed", "where are you headed", "to Big Sur"))
     if "people" not in trip:
-        missing.append("who's coming with you")
-    example = (
-        "from San Jose with Jordan and Priya" if "end" in trip else "San Jose to Big Sur with Jordan and Priya"
-    )
-    return f"Road trip, love it. Tell me {joined(missing)}. For example: {example}."
+        missing.append(("who's coming", "who's coming with you", "with Jordan and Priya, or just me"))
+    opening = f"Got it, {', '.join(known)}. " if known else "Road trip, love it. "
+    if len(missing) == 1:
+        _, question, example = missing[0]
+        return f"{opening}Last thing: {question}? Like: {example}."
+    asks = [f"{tell} (like: {example})" for tell, _, example in missing]
+    return f"{opening}Tell me {joined(asks)}."
 
 
 def board_line() -> str:
@@ -970,7 +988,7 @@ def trip_invite(trip: dict) -> str:
     names = joined(trip["people"])
     return (
         f"Got it: {trip['start']} to {trip['end']} with {names}.\n"
-        "Bring them into this chat:\n"
+        "Already in this chat? Just say \"we're all in\". If not, bring them in:\n"
         f"- If they're your ASI:One friends, tell your AI: Add {names} to this chat.\n"
         "- If not, tap Share at the top of this chat, copy the invite link, and send it to them. "
         "Turn on Public chat in chat settings so the link works.\n"
@@ -1292,12 +1310,23 @@ async def captain_chat(ctx: Context, sender: str, msg: ChatMessage):
         # "Nov 14 to 16, from San Jose with Jordan": the dates are the part before from/with.
         split = re.search(r"[\s,]*\b(?:from|with)\b", text, re.I)
         dates, rest = (text[: split.start()], text[split.start() :].strip(" ,")) if split else (text, "")
-        trip["dates"], trip["stage"] = dates.strip(" ,.") or text, "details"
+        dates = dates.strip(" ,.")
+        if not DATEISH.search(dates):
+            # "Unistudy is coming with me" is not a date: read it as trip details instead.
+            dates, rest = "", text
+        if dates:
+            trip["dates"], trip["stage"] = dates, "details"
+        elif has_details(rest, trip):
+            trip["stage"] = "details"
         await save_trip(ctx, sender, trip)
         if rest and has_details(rest, trip):
             await plan_trip(ctx, sender, rest, loose=True)
+            if not dates:
+                await ctx.send(sender, outbound("And what dates are you thinking?", end=False))
+        elif dates:
+            await ctx.send(sender, outbound(f"{trip['end']}, {dates}. " + trip_question(trip), end=False))
         else:
-            await ctx.send(sender, outbound(f"{trip['end']}, {trip['dates']}. " + trip_question(trip), end=False))
+            await ctx.send(sender, outbound(f"What dates work for {trip['end']}? Like: Nov 14 to 16, or this weekend.", end=False))
         return
     ready = READY.search(plain(text).lower())
     if trip is None and ready:

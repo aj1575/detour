@@ -33,15 +33,13 @@ HERO_IMAGE = "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=108
 
 CATEGORIES = ("Invite friends", "Vote on stays", "Things to do", "Day-by-day plan", "Split payments")
 
-# Each destination is one gate on the boarding pass. The selection JSON a row sends back is built
+# The destinations on the card. The selection JSON a row sends back is built
 # from content_id, category, and destination only.
 DESTINATIONS = (
     {
         "content_id": "big_sur_drive",
         "category": "coastal_drive",
         "destination": "Big Sur",
-        "gate": "GATE 1",
-        "code": "BSR",
         "blurb": "Bixby Bridge, redwoods, and cliffs along Highway 1.",
         "drive": "3 hr from SF",
         "vibe": "Cliffs and redwoods",
@@ -51,8 +49,6 @@ DESTINATIONS = (
         "content_id": "santa_cruz_coast",
         "category": "beach_town",
         "destination": "Santa Cruz",
-        "gate": "GATE 2",
-        "code": "SCZ",
         "blurb": "Boardwalk, surf breaks, and Natural Bridges at sunset.",
         "drive": "1.5 hr from SF",
         "vibe": "Surf and boardwalk",
@@ -62,8 +58,6 @@ DESTINATIONS = (
         "content_id": "san_francisco_city",
         "category": "city",
         "destination": "San Francisco",
-        "gate": "GATE 3",
-        "code": "SFO",
         "blurb": "Golden Gate views, Ferry Building food, and Presidio trails.",
         "drive": "City weekend",
         "vibe": "Food and fog",
@@ -91,13 +85,12 @@ def column(*children: dict, gap: int = 4) -> dict:
 
 
 def destination_row(item: dict) -> dict:
-    # list item > row (thumbnail + column) > column (gate, name, blurb, badges)
+    # list item > row (thumbnail + column) > column (name, blurb, badges)
     return {
         "children": [
             row(
                 {"type": "image", "src": item["image"], "alt": item["destination"]},
                 column(
-                    {"type": "text", "value": f"{item['gate']}  ·  {item['code']}", "style": "muted"},
                     {"type": "heading", "value": item["destination"], "level": 3},
                     {"type": "text", "value": item["blurb"], "style": "body"},
                     row(badge(item["drive"]), badge(item["vibe"], "success"), gap=6),
@@ -109,46 +102,27 @@ def destination_row(item: dict) -> dict:
     }
 
 
-# A boarding pass for the group. Depth: section(1) > list(2) > row(3) > column(4) > row(5) > badge(6). The limit is 8.
+# The trip starter card. Depth: section(1) > list(2) > row(3) > column(4) > row(5) > badge(6). The limit is 8.
 CARD_PAYLOAD = {
     "root": {
         "type": "section",
-        "title": "DETOUR  ·  BOARDING PASS",
-        "subtitle": "One ticket for the whole crew. Plan together, vote together, go.",
+        "title": "Detour · Plan a road trip together",
+        "subtitle": "Everyone in this chat plans, votes, and rides along. I keep it all in one place.",
         "children": [
             {"type": "image", "src": HERO_IMAGE, "alt": "A van on an open road", "aspect_ratio": "16:7"},
-            row(
-                column(
-                    {"type": "text", "value": "FROM", "style": "muted"},
-                    {"type": "heading", "value": "You", "level": 2},
-                ),
-                column(
-                    {"type": "text", "value": "  ", "style": "muted"},
-                    {"type": "heading", "value": "⟶", "level": 2},
-                ),
-                column(
-                    {"type": "text", "value": "TO", "style": "muted"},
-                    {"type": "heading", "value": "Pick a gate", "level": 2},
-                ),
-                column(
-                    {"type": "text", "value": "CREW", "style": "muted"},
-                    {"type": "heading", "value": "You + friends", "level": 2},
-                ),
-                gap=20,
-            ),
+            {"type": "text", "value": "What we can do together", "style": "muted"},
             row(*(badge(label) for label in CATEGORIES), gap=6),
             {"type": "divider"},
-            {"type": "heading", "value": "Choose your gate", "level": 2},
+            {"type": "heading", "value": "Where to?", "level": 2},
             {"type": "list", "items": [destination_row(item) for item in DESTINATIONS]},
             {"type": "divider"},
-            {"type": "text", "value": "Somewhere else in mind? Start a trip and tell me where, when, and who's coming.",
+            {"type": "text", "value": "Somewhere else? Tap Start my trip and tell me where, when, and who's coming.",
              "style": "muted"},
             row(
                 {"type": "button", "label": "Start my trip", "primary": True, "action": {"selection": START_TRIP}},
                 {"type": "button", "label": "Take me to Big Sur",
                  "action": {"selection": selection_for(DESTINATIONS[0])}},
             ),
-            {"type": "text", "value": "SEAT: ANY  ·  BOARDING: NOW  ·  ASI:ONE GROUP CHAT", "style": "emphasis"},
         ],
     }
 }
@@ -232,7 +206,7 @@ def selection_in(msg: ChatMessage) -> dict | None:
 
 def card_message() -> ChatMessage:
     return chat(
-        TextContent(type="text", text="Your Detour boarding pass: pick a gate, or tap Start my trip."),
+        TextContent(type="text", text="Let's plan it together. Pick a destination, or tap Start my trip."),
         MetadataContent(type="metadata", metadata=CARD_METADATA),
     )
 
