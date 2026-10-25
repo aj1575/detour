@@ -7,6 +7,14 @@ Detour is a group travel concierge that lives in an ASI:One group chat. Friends 
 
 Built for Cal Hacks 13.0 by **Y**uktaa and **A**nurag. The agent you talk to is **Yatra**, from our initials and the Hindi and Sanskrit word for "journey". Twelve agents use the Agent Chat Protocol, register on Agentverse with mailboxes, and are called from ASI:One. Convex is the shared live memory, and a live trip board shows everyone the same trip in real time.
 
+## How we use Convex
+
+- Shared memory for twelve stateless agents: one trip per ASI:One group chat, and every action claimed once by key.
+- Live board with `useQuery` everywhere: votes, itinerary, album, posts, and agent ID cards update without a refresh.
+- Components: Presence (who's viewing) and Rate Limiter (votes and photo uploads).
+- File storage for the trip album, a scheduled function and a cron that forget shared locations after six hours.
+- Details, with the file behind each feature: [hackathon.md](hackathon.md).
+
 ## Call the agents
 
 In ASI:One, open the chat model menu. If Claude is selected, switch it to **asi1**, then message Yatra. Claude answers on its own and does not call these agents. `asi1-mini` is the fast lightweight model, and `asi1-ultra` is the slower, heavier one. Use **asi1**.
