@@ -5,7 +5,7 @@ Say "Let's plan a trip" and this agent answers with an "Explore the Area" custom
 back {"content_id", "category", "destination"} and the agent asks for travel dates.
 
 Run on its own:      .venv\\Scripts\\python.exe agents\\trip_agent.py
-Run inside Detour:   agents/crew.py imports trip_card_reply() so Yatra
+Run inside Detour:   agents/crew.py imports trip_card_reply() so Atlas
                      shows the same card without a second Agentverse agent.
 """
 
@@ -180,7 +180,7 @@ def chat(*content) -> ChatMessage:
 
 def wants_trip(text: str) -> bool:
     text = text.replace("\u2019", "'").lower()
-    text = re.sub(r"^@\S+\s*|\b(?:travel captain|yatra)\b", " ", text)
+    text = re.sub(r"^@\S+\s*|\b(?:travel captain|yatra|atlas)\b", " ", text)
     return bool(TRIP_REQUEST.search(text))
 
 

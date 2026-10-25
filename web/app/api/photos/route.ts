@@ -4,7 +4,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 
 const MAX_BYTES = 15 * 1024 * 1024;
 
-// A photo shared in ASI:One (sent by Yatra as base64) or uploaded on the board (a form file).
+// A photo shared in ASI:One (sent by Atlas as base64) or uploaded on the board (a form file).
 export async function POST(request: Request) {
   let bytes: Buffer;
   let sharedBy = "Someone";

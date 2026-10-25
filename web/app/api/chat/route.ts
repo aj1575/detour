@@ -82,10 +82,10 @@ export async function POST(request: Request) {
     const hint =
       plan.agent === "none"
         ? "Ask for a place to stay, things to do, a day-by-day plan, food, gas, or urgent care."
-        : "Menus, payments, and the trip setup happen in the ASI:One chat with Yatra. Use the order desk on this board for the group order.";
+        : "Menus, payments, and the trip setup happen in the ASI:One chat with Atlas. Use the order desk on this board for the group order.";
     await client.mutation(api.messages.add, {
       tripId,
-      author: "Yatra",
+      author: "Atlas",
       role: "agent",
       body: hint,
       createdAt: Date.now(),

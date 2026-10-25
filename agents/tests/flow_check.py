@@ -1,7 +1,7 @@
 """End-to-end check of the demo flow without ASI:One.
 
 Runs every Detour agent plus two tester agents (the trip lead and a friend) in one process.
-Testers talk to Yatra through uAgents' local dispatch, exactly as ASI:One would,
+Testers talk to Atlas through uAgents' local dispatch, exactly as ASI:One would,
 and the script prints every reply, including card summaries.
 
 Stop agents/trip_captain.py first, because this uses the same ports. The web app must be running.
@@ -173,7 +173,7 @@ async def script():
     await say(lead, selection={"action": "start_trip"}, expect="that's great")
 
     # Trip onboarding through the boarding pass card.
-    await say(lead, "@yatra Let's plan a trip", expect="BOARDING PASS")
+    await say(lead, "@atlas-guide Let's plan a trip", expect="BOARDING PASS")
     await say(lead, selection={"content_id": "big_sur_drive", "category": "coastal_drive", "destination": "Big Sur"},
               expect="What dates")
     await say(lead, "Nov 7 to Nov 9", expect="starting from")

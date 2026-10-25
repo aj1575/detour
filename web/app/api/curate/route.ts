@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   ]);
   if (album.length === 0) {
     return Response.json(
-      { error: "No photos yet. Share trip photos with Yatra in the chat, or upload them on the trip board." },
+      { error: "No photos yet. Share trip photos with Atlas in the chat, or upload them on the trip board." },
       { status: 404 },
     );
   }

@@ -51,7 +51,7 @@ function prompt(text: string, town: string) {
   return `You are the judge for Detour, a road-trip concierge on Highway 1. The group is near ${town}, CA.
 Read one message and choose the single best intent. Do not answer the message. Do not use any tools.
 
-trip: starting or planning a trip, a route, a destination, or who is coming. Yatra handles it.
+trip: starting or planning a trip, a route, a destination, or who is coming. Atlas handles it.
 breakfast: they want food or a place to eat now.
 gas: fuel or a gas station.
 medical: someone is hurt, sick, dizzy, or needs a clinic, pharmacy, or hospital.

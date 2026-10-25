@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   const trip = await client.query(api.trips.get, { tripId });
   if (!trip?.destination) {
     return Response.json(
-      { error: "Tell Yatra where you're headed first, for example: San Jose to Big Sur." },
+      { error: "Tell Atlas where you're headed first, for example: San Jose to Big Sur." },
       { status: 400 },
     );
   }

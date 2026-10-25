@@ -1,6 +1,6 @@
 import { api, convexClient } from "@/lib/convex";
 
-// Yatra keeps each ASI:One conversation's trip in Convex, so a restart loses nothing.
+// Atlas keeps each ASI:One conversation's trip in Convex, so a restart loses nothing.
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as {
     action?: string;

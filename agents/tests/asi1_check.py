@@ -1,6 +1,6 @@
-"""Talk to Yatra through ASI:One itself, the way a judge would.
+"""Talk to Atlas through ASI:One itself, the way a judge would.
 
-Uses ASI:One planner mode, which discovers and messages Agentverse agents. Yatra's address is passed
+Uses ASI:One planner mode, which discovers and messages Agentverse agents. Atlas's address is passed
 in `agents`, so the planner calls it directly. Each step prints which agent ASI:One used, what it sent,
 and what came back. Needs ASI1_API_KEY in .env (asi1.ai/developer) and the agents running.
 
@@ -21,11 +21,11 @@ load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 YATRA = "agent1qvh68avajf0d6sz4ljuukz7umptsefk7dj4lhpqpvm4zx88z272h6aqp3cc"
 PROMPTS = sys.argv[1:] or [
-    "@yatra Let's plan a trip: road trip from San Jose to Big Sur with Jordan and Priya",
-    "@yatra we're all in",
-    "@yatra where should we stay?",
-    "@yatra plan our days",
-    "@yatra verify agents",
+    "@atlas-guide Let's plan a trip: road trip from San Jose to Big Sur with Jordan and Priya",
+    "@atlas-guide we're all in",
+    "@atlas-guide where should we stay?",
+    "@atlas-guide plan our days",
+    "@atlas-guide verify agents",
 ]
 
 
@@ -86,7 +86,7 @@ def main():
             print(f"<<< ({time.time() - started:.0f}s, plan {plan.get('plan_status', '?')}) {reply[:1500]}", flush=True)
             used = agents_used(plan)
             print(f"    agents: {', '.join(used) or 'none reported'}"
-                  f"{'  (Yatra called)' if any(YATRA in a or 'Yatra' in a for a in used) else ''}", flush=True)
+                  f"{'  (Atlas called)' if any(YATRA in a or 'Atlas' in a for a in used) else ''}", flush=True)
             messages.append({"role": "assistant", "content": reply})
 
 

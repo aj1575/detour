@@ -67,8 +67,8 @@ AGENTVERSE_KEY = os.getenv("AGENTVERSE_API_KEY", "").strip()
 
 ROSTER = (
     (
-        "Yatra", "yatra", "trip-captain", 8001,
-        "Yatra, Detour's group travel captain. Plan a trip with friends, vote on stays and things to do, and "
+        "Atlas", "atlas-guide", "trip-captain", 8001,
+        "Atlas, Detour's group travel captain. Plan a trip with friends, vote on stays and things to do, and "
         "get help on the road: breakfast, gas, urgent care, a menu, payment, or the bill split.",
         ["Let's plan a trip", "Let's go on a road trip", "I'm starving, breakfast?", "We're low on gas"],
     ),
@@ -240,7 +240,7 @@ def spoken(msg: ChatMessage) -> str:
 
 
 def clean(text: str) -> str:
-    # ASI:One may keep the mention, such as "@yatra plan a trip" or an agent1... address.
+    # ASI:One may keep the mention, such as "@atlas-guide plan a trip" or an agent1... address.
     parts = text.split()
     if parts and parts[0].startswith("@"):
         return " ".join(parts[1:]).strip()
@@ -839,7 +839,7 @@ cashier.include(payments, publish_manifest=True)
 
 captain_protocol = Protocol(spec=chat_protocol_spec)
 
-# Yatra's memory. Convex keeps the durable copy (see /api/crew), so a restart loses nothing,
+# Atlas's memory. Convex keeps the durable copy (see /api/crew), so a restart loses nothing,
 # and everyone in an ASI:One group chat shares one trip.
 crews: dict[str, dict] = {}  # trip id -> trip
 chats: dict[str, str] = {}  # ASI:One sender -> trip id
@@ -1084,7 +1084,7 @@ async def cast_vote(user: str, kind: str, option: str) -> str:
     try:
         result = await post("/api/vote", body, timeout=20)
     except Exception as error:
-        return friendly("Yatra", error)
+        return friendly("Atlas", error)
     tally = ", ".join(f"{row['name']} ({row['votes']})" for row in result.get("tally") or [])
     what = "stays" if kind == "stay" else "things to do"
     moved = " You changed your vote." if result.get("moved") else ""
@@ -1098,7 +1098,7 @@ STORAGE = ExternalStorage(identity=captain._identity, storage_url=AgentverseConf
 
 
 async def photo_bytes(item: ResourceContent) -> str:
-    """The photo as base64. ASI:One keeps shared files in Agentverse storage, read with Yatra's own identity."""
+    """The photo as base64. ASI:One keeps shared files in Agentverse storage, read with Atlas's own identity."""
     resources = item.resource if isinstance(item.resource, list) else [item.resource]
     try:
         data = await asyncio.to_thread(STORAGE.download, str(item.resource_id))

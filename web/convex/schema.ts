@@ -16,7 +16,7 @@ export default defineSchema({
     hereLat: v.optional(v.number()),
     hereLng: v.optional(v.number()),
     hereAt: v.optional(v.number()),
-    // Yatra's memory of the ASI:One conversation, so a restart keeps the trip.
+    // Atlas's memory of the ASI:One conversation, so a restart keeps the trip.
     stage: v.optional(v.string()),
     dates: v.optional(v.string()),
     people: v.optional(v.array(v.string())),

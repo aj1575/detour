@@ -36,7 +36,7 @@ const EMPTY_PROFILE: Profile = {
 };
 
 const AGENT_NAMES: Record<string, string> = {
-  "Travel Captain": "Yatra",
+  "Travel Captain": "Atlas",
   "Personal Chef": "BiteScout",
   "Pit Stop": "FuelFox",
   Lifeline: "CareRoute",
@@ -311,14 +311,14 @@ function Board({ trip, tripId, loading }: { trip: Doc<"trips"> | null; tripId: I
           <Itinerary trip={trip} />
           <Picks
             title="Where we stay"
-            empty="Ask Yatra: where should we stay?"
+            empty="Ask Atlas: where should we stay?"
             rows={picks?.stays ?? []}
             me={`board:${name}`}
             onVote={(option) => void vote("stay", option)}
           />
           <Picks
             title="Things to do"
-            empty="Ask Yatra: things to do there."
+            empty="Ask Atlas: things to do there."
             rows={picks?.activities ?? []}
             me={`board:${name}`}
             onVote={(option) => void vote("activity", option)}
@@ -441,7 +441,7 @@ function Album({ tripId, name }: { tripId: Id<"trips">; name: string }) {
         <div>
           <h2 className="text-xl font-semibold">Trip album</h2>
           <p className="text-[var(--muted)]">
-            Share photos with Yatra in ASI:One, or add them here. Say &quot;curate a post&quot; and the Curator picks the
+            Share photos with Atlas in ASI:One, or add them here. Say &quot;curate a post&quot; and the Curator picks the
             set that looks best together.
           </p>
         </div>
@@ -513,7 +513,7 @@ function IdCards() {
   const passports = useQuery(api.actions.passports) ?? [];
   const recent = useQuery(api.actions.recent, { limit: 8 }) ?? [];
   if (passports.length === 0) return null;
-  const order = ["Yatra", "Relay", "StayScout", "Local Guide", "Itinerary", "Curator", "BiteScout", "FuelFox", "CareRoute", "MenuScout", "PayPilot", "Ledger"];
+  const order = ["Atlas", "Relay", "StayScout", "Local Guide", "Itinerary", "Curator", "BiteScout", "FuelFox", "CareRoute", "MenuScout", "PayPilot", "Ledger"];
   const sorted = [...passports].sort((a, b) => order.indexOf(a.name) - order.indexOf(b.name));
   return (
     <section aria-label="Agent ID cards" className="border-t border-[var(--line)] px-5 py-5">
@@ -618,7 +618,7 @@ function Itinerary({ trip }: { trip: Doc<"trips"> | null }) {
     <section aria-label="Itinerary" className="rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4">
       <h2 className="font-semibold">Day-by-day plan</h2>
       {days.length === 0 ? (
-        <p className="mt-2 text-[var(--muted)]">Say &quot;plan our days&quot; to Yatra and the plan appears here.</p>
+        <p className="mt-2 text-[var(--muted)]">Say &quot;plan our days&quot; to Atlas and the plan appears here.</p>
       ) : (
         <ol className="mt-2 flex flex-col gap-3">
           {days.map((day) => (

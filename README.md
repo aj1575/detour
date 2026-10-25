@@ -5,7 +5,7 @@
 
 Detour is a group travel concierge that lives in an ASI:One group chat. Friends plan the trip together: where to go, when, who's coming, where to stay, and what to do. Everyone votes on stays and activities, and Detour turns the winners into a day-by-day itinerary. On the road it handles breakfast, gas, urgent care, the group's food order, a Stripe test payment, and the Splitwise split. The driver keeps their hands on the wheel.
 
-Built for Cal Hacks 13.0 by **Y**uktaa and **A**nurag. The agent you talk to is **Yatra**, from our initials and the Hindi and Sanskrit word for "journey". Twelve agents use the Agent Chat Protocol, register on Agentverse with mailboxes, and are called from ASI:One. Convex is the shared live memory, and a live trip board shows everyone the same trip in real time.
+Built for Cal Hacks 13.0 by Yuktaa and Anurag. The agent you talk to is **Atlas** (`@atlas-guide`), the trip captain. Twelve agents use the Agent Chat Protocol, register on Agentverse with mailboxes, and are called from ASI:One. Convex is the shared live memory, and a live trip board shows everyone the same trip in real time.
 
 ## How we use Convex
 
@@ -17,7 +17,7 @@ Built for Cal Hacks 13.0 by **Y**uktaa and **A**nurag. The agent you talk to is 
 
 ## Call the agents
 
-In ASI:One, open the chat model menu. If Claude is selected, switch it to **asi1**, then message Yatra. Claude answers on its own and does not call these agents. `asi1-mini` is the fast lightweight model, and `asi1-ultra` is the slower, heavier one. Use **asi1**.
+In ASI:One, open the chat model menu. If Claude is selected, switch it to **asi1**, then message Atlas. Claude answers on its own and does not call these agents. `asi1-mini` is the fast lightweight model, and `asi1-ultra` is the slower, heavier one. Use **asi1**.
 
 `agent1qvh68avajf0d6sz4ljuukz7umptsefk7dj4lhpqpvm4zx88z272h6aqp3cc`
 
@@ -25,9 +25,9 @@ The demo, in order:
 
 | Say this | What happens |
 | --- | --- |
-| `Let's plan a trip` | Yatra shows the Detour boarding pass card. Tap a gate such as Big Sur, then give your dates. Or tap **Start my trip** |
-| `from San Jose with Jordan and Priya` | Yatra explains how to bring them into the chat |
-| `we're all in` (from a friend) | Yatra welcomes the group. The friend joins the same trip |
+| `Let's plan a trip` | Atlas shows the Detour boarding pass card. Tap a gate such as Big Sur, then give your dates. Or tap **Start my trip** |
+| `from San Jose with Jordan and Priya` | Atlas explains how to bring them into the chat |
+| `we're all in` (from a friend) | Atlas welcomes the group. The friend joins the same trip |
 | `where should we stay?` | StayScout sends a card of places near the destination. Everyone taps **Vote for this** |
 | `things to do there` | Local Guide sends a voting card of sights and hikes |
 | `plan our days` | Itinerary builds a day-by-day plan from real places and the group's votes |
@@ -36,11 +36,11 @@ The demo, in order:
 | `pay`, then **Approve** | PayPilot runs a Stripe test payment, and Ledger splits it in Splitwise |
 | `the tank is almost empty` | FuelFox |
 | `I feel dizzy` | CareRoute, always starting with the 911 line |
-| Share photos with `@yatra` along the way | Yatra adds them to the trip album, stored in Convex |
+| Share photos with `@atlas-guide` along the way | Atlas adds them to the trip album, stored in Convex |
 | `curate a post` | Curator picks the photos that look best together and writes a caption. **Another set** gives a different post |
-| `verify agents` | Yatra checks every agent's signed actions and shows their ID cards |
+| `verify agents` | Atlas checks every agent's signed actions and shows their ID cards |
 
-Yatra is the one agent you talk to, and it stays in charge. Each request goes to Relay, where Factory Droid judges it with structured output: one label from a fixed list, any place the person names, and a short reason. Only two kinds of message skip Droid: obvious medical messages, so they are never delayed, and the fixed commands that card buttons send. Yatra then calls that specialist, and the reply comes back in the same chat.
+Atlas is the one agent you talk to, and it stays in charge. Each request goes to Relay, where Factory Droid judges it with structured output: one label from a fixed list, any place the person names, and a short reason. Only two kinds of message skip Droid: obvious medical messages, so they are never delayed, and the fixed commands that card buttons send. Atlas then calls that specialist, and the reply comes back in the same chat.
 
 Open http://localhost:3000 to watch the **live trip board**. Its message box and **Reply by voice** button reach the same concierge: stays, things to do, the itinerary, food, gas, and urgent care, using the group's trip. Driving mode reads each answer aloud with Cartesia. It shows the itinerary, the vote tallies, who is looking at the board, the group order, and every agent's work, all updating the moment anyone in the chat acts.
 
@@ -48,7 +48,7 @@ Open http://localhost:3000 to watch the **live trip board**. Its message box and
 
 | Name (Agentverse profile) | Handle | Role | Address |
 | --- | --- | --- | --- |
-| [Yatra](https://agentverse.ai/agents/details/agent1qvh68avajf0d6sz4ljuukz7umptsefk7dj4lhpqpvm4zx88z272h6aqp3cc/profile) | `@yatra` | Starter, trip onboarding, votes | `agent1qvh68avajf0d6sz4ljuukz7umptsefk7dj4lhpqpvm4zx88z272h6aqp3cc` |
+| [Atlas](https://agentverse.ai/agents/details/agent1qvh68avajf0d6sz4ljuukz7umptsefk7dj4lhpqpvm4zx88z272h6aqp3cc/profile) | `@atlas-guide` | Starter, trip onboarding, votes | `agent1qvh68avajf0d6sz4ljuukz7umptsefk7dj4lhpqpvm4zx88z272h6aqp3cc` |
 | [Relay](https://agentverse.ai/agents/details/agent1qte8wqjqant2k8u8k57k0nmsx9qjtp9f3la2y3y5nxs5cqg0qqafvlqh7wm/profile) | `@routing-agent` | Droid router | `agent1qte8wqjqant2k8u8k57k0nmsx9qjtp9f3la2y3y5nxs5cqg0qqafvlqh7wm` |
 | [StayScout](https://agentverse.ai/agents/details/agent1q2qzfn40z7g4k22pg38q7ap4407xuvfhpat4jcn20x4lxl6ky9m9uf0pref/profile) | `@detour-stays` | Places to stay, voting card | `agent1q2qzfn40z7g4k22pg38q7ap4407xuvfhpat4jcn20x4lxl6ky9m9uf0pref` |
 | [Local Guide](https://agentverse.ai/agents/details/agent1qfus9aqzdmgy50rgvcuf0tq56qq0xm0gsg66hgmk54z20vkwrrvuknggchw/profile) | `@detour-guide` | Things to do, voting card | `agent1qfus9aqzdmgy50rgvcuf0tq56qq0xm0gsg66hgmk54z20vkwrrvuknggchw` |
@@ -65,10 +65,10 @@ Each agent's Agentverse profile lives in the repo: the description and starter p
 
 ## How it uses each sponsor
 
-**Fetch.ai.** Twelve uAgents with the Agent Chat Protocol and mailboxes on Agentverse. The whole flow runs inside one ASI:One conversation. That includes group chats: each friend who messages Yatra joins the same trip. It uses Interactive Cards (a custom boarding pass card, voting carousels, a custom itinerary card, a menu carousel, and a payment review card) and the Fetch Payment Protocol, verified against Stripe before it completes.
+**Fetch.ai.** Twelve uAgents with the Agent Chat Protocol and mailboxes on Agentverse. The whole flow runs inside one ASI:One conversation. That includes group chats: each friend who messages Atlas joins the same trip. It uses Interactive Cards (a custom boarding pass card, voting carousels, a custom itinerary card, a menu carousel, and a payment review card) and the Fetch Payment Protocol, verified against Stripe before it completes.
 
 **Convex.** Convex is the agents' shared memory and the board's live backend:
-- Yatra's trip state (stage, route, dates, people, chat members) is stored in Convex. A restart of the agents loses nothing, and every friend in the group chat resolves to the same trip (`convex/trips.ts`).
+- Atlas's trip state (stage, route, dates, people, chat members) is stored in Convex. A restart of the agents loses nothing, and every friend in the group chat resolves to the same trip (`convex/trips.ts`).
 - Votes are one-per-person transactional mutations. The board's tallies are live queries (`convex/options.ts`).
 - The board uses `useQuery` subscriptions for the trip, itinerary, messages, orders, votes, and agent log. There is no polling.
 - The **Presence component** (`@convex-dev/presence`) shows who has the board open right now.
@@ -101,7 +101,7 @@ Each agent's Agentverse profile lives in the repo: the description and starter p
 5. **End-to-end functionality.**
    - The whole journey runs in ASI:One: onboarding, group voting, the itinerary, food, the order, payment, and the split.
    - It is covered by an automated end-to-end test that runs every agent plus two simulated people.
-   - It is also covered by `agents/tests/asi1_check.py`, which drives Yatra through the ASI:One API itself.
+   - It is also covered by `agents/tests/asi1_check.py`, which drives Atlas through the ASI:One API itself.
 
 **Reliability details.**
 - Trip state is durable.
@@ -153,7 +153,7 @@ Copy `.env.example` to `.env` and to `web/.env`, and fill in the keys you use. N
 | `SPLITWISE_API_KEY` | The split after a test payment |
 | `CARTESIA_API_KEY` | Spoken replies in the web app |
 | `AGENTVERSE_API_KEY` | Optional. Pushes each agent's profile to Agentverse on start |
-| `DETOUR_PUBLIC_URL` | Optional. A public URL for the trip board, which Yatra then shares in the chat |
+| `DETOUR_PUBLIC_URL` | Optional. A public URL for the trip board, which Atlas then shares in the chat |
 
 `ASI1_API_KEY` is not required for receiving a chat from ASI:One.
 

@@ -5,7 +5,7 @@ import { v } from "convex/values";
 import { day } from "./schema";
 import { internal } from "./_generated/api";
 
-// A friend who messages Yatra within this window joins the active trip.
+// A friend who messages Atlas within this window joins the active trip.
 const JOIN_WINDOW_MS = 12 * 60 * 60 * 1000;
 const LOCATION_TTL_MS = 6 * 60 * 60 * 1000;
 
@@ -45,7 +45,7 @@ export const ensureDemo = mutation({
       tripId,
       author: "Detour",
       role: "system",
-      body: "Trip board for Alex, the trip lead, and Jordan, the driver. Message Yatra in ASI:One and this page updates live.",
+      body: "Trip board for Alex, the trip lead, and Jordan, the driver. Message Atlas in ASI:One and this page updates live.",
       createdAt: Date.now(),
     });
     return tripId;
@@ -99,7 +99,7 @@ function crewView(trip: Doc<"trips"> | null) {
   };
 }
 
-// Yatra's trip for one ASI:One sender. A new sender joins the trip in progress.
+// Atlas's trip for one ASI:One sender. A new sender joins the trip in progress.
 export const loadCrew = mutation({
   args: { chat: v.string() },
   handler: async (ctx, { chat }) => {
@@ -154,7 +154,7 @@ export const saveCrew = mutation({
     const tripId = await ctx.db.insert("trips", { ...fields, leadName: "Me", members: [args.chat] });
     await ctx.db.insert("messages", {
       tripId,
-      author: "Yatra",
+      author: "Atlas",
       role: "system",
       body: "A new trip started in ASI:One. This board updates live as the group plans.",
       createdAt: Date.now(),
