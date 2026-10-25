@@ -713,10 +713,15 @@ async def waiter_work(text: str) -> str | ChatMessage:
         orders = [order for order in fresh.get("orders") or [] if order.get("placeName") == place]
         waiting = [name for name in diners(fresh) if name not in by_diner(orders)]
         if not waiting:
+            open_order.clear()
             return group_order_card(place, orders)
-        return (
-            f"Added {item} for {member}. Still waiting on {joined(waiting)}. "
-            "I'll show the group order once everyone has picked, or say pay to check out now."
+        open_order.update(place=place, waiting=waiting)
+        # ASI:One locks a card once someone taps it, so the next person gets a fresh menu.
+        return menu_message(
+            place,
+            stored_dishes(fresh, place),
+            f"Added {item} for {member}. {joined(waiting)}, your turn: tap Add to order on your dish. "
+            "I'll show the group order once everyone has picked, or say pay to check out now.",
         )
     place = place_from(payload)
     marker = " at "
@@ -724,9 +729,29 @@ async def waiter_work(text: str) -> str | ChatMessage:
         place = text[text.lower().rfind(marker) + len(marker) :].strip(" .")
     if not place:
         return "Name the stop, for example: menu at Johnny's."
+    if place == open_order.get("place") and (dishes := stored_dishes(payload, place)):
+        return menu_message(place, dishes, f"Here's the menu at {place} again. {joined(open_order['waiting'])}, "
+                                           "tap Add to order on your dish.")
     result = await post("/api/menu", {"tripId": payload["tripId"], "placeName": place})
-    dishes = result.get("dishes") or []
-    lead = str((payload.get("trip") or {}).get("leadName") or "Alex")
+    open_order.update(place=place, waiting=diners(payload))
+    note = f"{result['note']} {place}. Everyone: tap Add to order on your own dish, and I'll put the group order together."
+    return menu_message(place, result.get("dishes") or [], note)
+
+
+open_order: dict = {}  # the menu the group is ordering from, and who hasn't picked yet
+MENU_AGAIN = re.compile(r"\b(options|menu|what can i (get|order|have)|my order|order (for me|mine)|my turn|choices)\b", re.I)
+
+
+def stored_dishes(payload: dict, place: str) -> list[dict]:
+    for message in reversed(payload.get("messages") or []):
+        if message.get("menuJson"):
+            menu = json.loads(message["menuJson"])
+            if menu.get("placeName") == place:
+                return menu.get("dishes") or []
+    return []
+
+
+def menu_message(place: str, dishes: list[dict], note: str) -> str | ChatMessage:
     items = [
         CarouselItem(
             id=f"dish-{index}",
@@ -735,13 +760,12 @@ async def waiter_work(text: str) -> str | ChatMessage:
             secondary_text=f"${float(dish['price']):.2f}",
             primary_cta=CtaAction(
                 label="Add to order",
-                selection={"action": "order", "item": dish["name"], "member": lead, "place": place},
+                selection={"action": "order", "item": dish["name"], "member": LEAD, "place": place},
                 primary=True,
             ),
         )
         for index, dish in enumerate(dishes)
     ]
-    note = f"{result['note']} {place}. Everyone: tap Add to order on your own dish, and I'll put the group order together."
     if not items:
         return note
     return with_card(note, CarouselCardPayload(title=place, subtitle="Sample menu", items=items))
@@ -776,6 +800,7 @@ async def cashier_turn(text: str) -> tuple[str | ChatMessage, RequestPayment | N
             "payment, no real money, and split it in Splitwise.",
             card,
         ), None
+    open_order.clear()
     if "checkout" not in text.lower():
         paid = await post(
             "/api/pay",
@@ -1442,6 +1467,10 @@ async def captain_chat(ctx: Context, sender: str, msg: ChatMessage):
         # Each friend's tap is their own order, whoever opened the menu.
         item, _, place = ordered
         text = f"order {item} for {await diner_name(sender)} at {place}"
+    elif (open_order.get("place") and MENU_AGAIN.search(text) and not text.lower().startswith("menu at ")
+          and not re.search(r"\b(pay|split|bill|checkout)\b", text, re.I)):
+        # "show me the options" while the group is ordering: the same menu, ready to tap.
+        text = f"menu at {open_order['place']}"
     tag = uuid4().hex[:8]
     jobs[tag] = {"user": sender, "text": text}
     ctx.logger.info("ASI:One message: %s", text[:180])

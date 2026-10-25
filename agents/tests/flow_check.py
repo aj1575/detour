@@ -220,9 +220,12 @@ async def script():
     see_menu = json.dumps({**(first_option(food, "menu") or {"action": "menu", "place": "Johnny's"}), "approved": True})
     menu = await say(lead, see_menu, wait=60, expect="Sample menu")
     await redelivered(lead)  # the repeat must not send a second menu
-    if (mine := option_at(menu, 0)) and (theirs := option_at(menu, 1)):
-        await say(lead, json.dumps({**mine, "approved": True}), wait=60, expect="Still waiting on Unistudy")
-        await say(friend, json.dumps({**theirs, "approved": True}), wait=60, expect="Group order")
+    if mine := option_at(menu, 0):
+        # ASI:One locks a card after one tap, so the friend needs a fresh menu: with the reply, or on asking.
+        await say(lead, json.dumps({**mine, "approved": True}), wait=60, expect="Unistudy, your turn")
+        again = await say(friend, "show me the options", wait=60, expect="Add to order")
+        if theirs := option_at(again, 1):
+            await say(friend, json.dumps({**theirs, "approved": True}), wait=60, expect="Group order")
     await say(friend, "pay", wait=60, expect="Unistudy")  # the payment card lists each person's order
     if PAY:
         await say(lead, selection={"action": "pay"}, wait=90, expect="Stripe test payment")
