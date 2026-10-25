@@ -12,6 +12,7 @@ Stop agents/trip_captain.py first, because this uses the same ports. The web app
 """
 
 import asyncio
+import contextlib
 import json
 import sys
 import time
@@ -36,6 +37,7 @@ from uagents_core.contrib.protocols.chat.cards import create_card_response_conte
 PAY = "--pay" in sys.argv
 inbox: dict[str, asyncio.Queue] = {}
 failures: list[str] = []
+sent: dict[str, ChatMessage] = {}  # the last message each tester sent
 
 
 def tester(name: str, port: int) -> Agent:
@@ -113,7 +115,8 @@ async def say(who: Agent, text: str | None = None, selection: dict | None = None
         label = text if text is not None else f"<tap {selection}>"
     print(f"\n>>> {who.name}: {label}", flush=True)
     started = time.time()
-    await lead_ctx[who.name].send(crew.captain.address, ChatMessage(content=content))
+    sent[who.name] = ChatMessage(content=content)
+    await lead_ctx[who.name].send(crew.captain.address, sent[who.name])
     got = []
     deadline = started + wait
     while len(got) < replies and time.time() < deadline:
@@ -133,6 +136,17 @@ async def say(who: Agent, text: str | None = None, selection: dict | None = None
         print(f"!!! expected '{expect}'", flush=True)
         failures.append(f"{label}: expected '{expect}'")
     return got
+
+
+async def redelivered(who, wait: float = 10):
+    """Deliver the last message again with the same id, as ASI:One sometimes does. It must get no reply."""
+    queue = inbox[who.name]
+    print(f"\n>>> {who.name}: <same message delivered again>", flush=True)
+    await lead_ctx[who.name].send(crew.captain.address, sent[who.name])
+    with contextlib.suppress(asyncio.TimeoutError):
+        msg = await asyncio.wait_for(queue.get(), timeout=wait)
+        print(f"!!! expected no reply, got: {describe(msg)[0][:200]}", flush=True)
+        failures.append("re-delivered tap: expected no reply")
 
 
 lead_ctx: dict[str, Context] = {}
@@ -202,11 +216,14 @@ async def script():
 
     # On the road.
     food = await say(lead, "I'm starving, breakfast?", wait=90, expect="See menu")
-    menu = await say(lead, selection=first_option(food, "menu") or {"action": "menu", "place": "Johnny's"},
-                     wait=60, expect="Sample menu")
-    if dish := first_option(menu, "order"):
-        await say(lead, selection=dish, expect="Added")
-    await say(lead, "pay", wait=60, expect="Approve")
+    # ASI:One sends card taps as JSON text, and sometimes delivers the same tap twice.
+    see_menu = json.dumps({**(first_option(food, "menu") or {"action": "menu", "place": "Johnny's"}), "approved": True})
+    menu = await say(lead, see_menu, wait=60, expect="Sample menu")
+    await redelivered(lead)  # the repeat must not send a second menu
+    if (mine := option_at(menu, 0)) and (theirs := option_at(menu, 1)):
+        await say(lead, json.dumps({**mine, "approved": True}), wait=60, expect="Still waiting on Unistudy")
+        await say(friend, json.dumps({**theirs, "approved": True}), wait=60, expect="Group order")
+    await say(friend, "pay", wait=60, expect="Unistudy")  # the payment card lists each person's order
     if PAY:
         await say(lead, selection={"action": "pay"}, wait=90, expect="Stripe test payment")
         await say(lead, "split the bill", wait=60, expect="Splitwise")

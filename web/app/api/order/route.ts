@@ -2,8 +2,6 @@ import { api, convexClient } from "@/lib/convex";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { Dish } from "@/lib/commerce";
 
-const MEMBERS = new Set(["Alex", "Jordan"]);
-
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as {
     tripId?: string;
@@ -24,15 +22,11 @@ export async function POST(request: Request) {
     return Response.json({ ok: true });
   }
 
-  const member = body.member?.trim() ?? "";
+  // Atlas names each diner from the ASI:One group chat, so any short name is accepted.
+  const member = body.member?.trim().slice(0, 40) ?? "";
   const item = body.item?.trim() ?? "";
-  const trip = await client.query(api.trips.get, { tripId });
-  const members = new Set([...MEMBERS, trip?.leadName ?? "", ...(trip?.people ?? [])].filter(Boolean));
-  if (!members.has(member) || !item) {
-    return Response.json(
-      { error: `Choose someone on the trip (${[...members].join(", ")}) and a menu item.` },
-      { status: 400 },
-    );
+  if (!member || !item) {
+    return Response.json({ error: "Choose who is ordering and a menu item." }, { status: 400 });
   }
 
   const messages = await client.query(api.messages.list, { tripId });

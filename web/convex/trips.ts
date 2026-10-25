@@ -96,6 +96,8 @@ function crewView(trip: Doc<"trips"> | null) {
     dates: trip.dates ?? "",
     people: trip.people ?? null,
     near: trip.near ?? "",
+    // ASI:One senders in the order they joined; the first one started the trip.
+    members: trip.members ?? [],
   };
 }
 

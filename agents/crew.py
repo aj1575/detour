@@ -261,6 +261,16 @@ def card_command(selection: dict) -> str:
     return ""
 
 
+def text_selection(text: str) -> dict:
+    # ASI:One often sends a card tap as plain JSON text, such as {"action":"order","item":...,"approved":true}.
+    for raw in re.findall(r"\{[^{}]*\}", text):
+        with contextlib.suppress(ValueError):
+            data = json.loads(raw)
+            if isinstance(data, dict) and data.get("action"):
+                return data
+    return {}
+
+
 def incoming_text(msg: ChatMessage) -> str:
     for item in msg.content:
         if isinstance(item, MetadataContent):
@@ -271,6 +281,9 @@ def incoming_text(msg: ChatMessage) -> str:
                 return ""
             if response.selection:
                 return card_command(response.selection)
+        elif isinstance(item, TextContent) and (selection := text_selection(item.text)):
+            if command := card_command(selection):
+                return command
     return clean(msg.text())
 
 
@@ -642,6 +655,50 @@ def parse_order(text: str) -> tuple[str, str, str] | None:
     return item, member, place
 
 
+LEAD = "Trip lead"
+
+
+def diners(payload: dict) -> list[str]:
+    """Everyone eating: the person who started the trip, then each friend they named."""
+    info = payload.get("trip") or {}
+    people = info.get("people") or []
+    # The board's demo trip has no ASI:One chat behind it, so its people list already names the lead.
+    return [LEAD, *people] if info.get("stage") else people
+
+
+def by_diner(orders: list[dict]) -> dict[str, list[dict]]:
+    grouped: dict[str, list[dict]] = {}
+    for order in orders:
+        grouped.setdefault(order["member"], []).append(order)
+    return grouped
+
+
+def group_order_card(place: str, orders: list[dict]) -> ChatMessage:
+    grouped = by_diner(orders)
+    total = sum(float(order["price"]) for order in orders)
+    rows = [
+        {"type": "text", "value": f"{member}: " + ", ".join(
+            f"{order['item']} (${float(order['price']):.2f})" for order in items), "style": "body"}
+        for member, items in grouped.items()
+    ]
+    card = CustomCardPayload.model_validate({
+        "root": {
+            "type": "section",
+            "title": f"Group order · {place}",
+            "subtitle": "Everyone has picked. Anyone can pay for the table.",
+            "children": [
+                *rows,
+                {"type": "divider"},
+                {"type": "heading", "value": f"Total ${total:.2f}", "level": 3},
+                {"type": "button", "label": "Pay for the group", "primary": True,
+                 "action": {"selection": {"action": "ask", "text": "pay"}}},
+            ],
+        }
+    })
+    lines = "; ".join(f"{member}: " + ", ".join(order["item"] for order in items) for member, items in grouped.items())
+    return with_card(f"Group order at {place}. {lines}. Total ${total:.2f}. Say pay when you're ready.", card)
+
+
 async def waiter_work(text: str) -> str | ChatMessage:
     payload = await trip()
     ordered = parse_order(text)
@@ -651,7 +708,16 @@ async def waiter_work(text: str) -> str | ChatMessage:
             "/api/order",
             {"tripId": payload["tripId"], "placeName": place, "member": member, "item": item},
         )
-        return f"Added {item} for {member} at {place}. Say pay when the table is ready."
+        # Read the table back from Convex so every friend's pick counts, whoever tapped last.
+        fresh = await trip()
+        orders = [order for order in fresh.get("orders") or [] if order.get("placeName") == place]
+        waiting = [name for name in diners(fresh) if name not in by_diner(orders)]
+        if not waiting:
+            return group_order_card(place, orders)
+        return (
+            f"Added {item} for {member}. Still waiting on {joined(waiting)}. "
+            "I'll show the group order once everyone has picked, or say pay to check out now."
+        )
     place = place_from(payload)
     marker = " at "
     if marker in text.lower():
@@ -675,7 +741,7 @@ async def waiter_work(text: str) -> str | ChatMessage:
         )
         for index, dish in enumerate(dishes)
     ]
-    note = f"{result['note']} {place}."
+    note = f"{result['note']} {place}. Everyone: tap Add to order on your own dish, and I'll put the group order together."
     if not items:
         return note
     return with_card(note, CarouselCardPayload(title=place, subtitle="Sample menu", items=items))
@@ -696,13 +762,17 @@ async def cashier_turn(text: str) -> tuple[str | ChatMessage, RequestPayment | N
             title="Approve the test payment",
             summary_rows=[
                 ReviewSummaryRow(label="Place", value=place),
+                *(
+                    ReviewSummaryRow(label=member, value=", ".join(order["item"] for order in items)[:120])
+                    for member, items in by_diner(orders).items()
+                ),
                 ReviewSummaryRow(label="Total", value=f"${dollars}"),
             ],
             approve_cta=CtaAction(label="Approve", selection={"action": "pay"}, primary=True),
             reject_cta=CtaAction(label="Not now", selection={"action": "skip"}),
         )
         return with_card(
-            f"The sample order at {place} is ${dollars}. Approve it to run a proof-of-concept Stripe test "
+            f"The group order at {place} is ${dollars}. Approve it to run a proof-of-concept Stripe test "
             "payment, no real money, and split it in Splitwise.",
             card,
         ), None
@@ -1074,6 +1144,19 @@ async def plan_trip(ctx: Context, user: str, text: str, loose: bool):
     await ctx.send(user, outbound(reply, end=False))
 
 
+async def diner_name(user: str) -> str:
+    """The trip lead is whoever started the trip; friends take the names the lead gave, in the order they joined."""
+    with contextlib.suppress(Exception):
+        found = (await post("/api/crew", {"action": "load", "chat": user}, timeout=15)).get("trip") or {}
+        members, people = found.get("members") or [], found.get("people") or []
+        if user in members:
+            index = members.index(user)
+            if index == 0:
+                return LEAD
+            return people[index - 1] if index - 1 < len(people) else f"Friend {index}"
+    return LEAD
+
+
 def vote_in(msg: ChatMessage) -> tuple[str, str] | None:
     """A Vote tap: ASI:One sends it as card metadata, some clients as JSON text."""
     selections = []
@@ -1161,6 +1244,7 @@ async def save_photos(ctx: Context, sender: str, items: list[ResourceContent]) -
 
 VERIFY = re.compile(r"\b(verify|audit)\b.*\b(agents?|actions?|ledger)\b|\bagent ids?\b|\bid cards?\b|\bwho did what\b", re.I)
 TAP_WINDOW_S = 120
+first_taps: dict[str, tuple[str, float]] = {}  # tap key -> (message id, when) it was first accepted
 
 
 def selection_of(item) -> dict:
@@ -1168,6 +1252,8 @@ def selection_of(item) -> dict:
         response = extract_card_response(item)
         if response and response.selection:
             return response.selection
+    if isinstance(item, TextContent):
+        return text_selection(item.text)
     return {}
 
 
@@ -1181,6 +1267,12 @@ def entry_key(sender: str, msg: ChatMessage) -> tuple[str, str]:
                 selection = json.dumps(response.selection, sort_keys=True)
                 digest = hashlib.sha256(f"{sender}|{card}|{selection}".encode()).hexdigest()[:32]
                 return f"tap:{digest}", selection
+        if isinstance(item, TextContent) and (found := text_selection(item.text)):
+            found.pop("approved", None)
+            selection = json.dumps(found, sort_keys=True)
+            window = int(time.time() // TAP_WINDOW_S)
+            digest = hashlib.sha256(f"{sender}|{window}|{selection}".encode()).hexdigest()[:32]
+            return f"tap:{digest}", selection
     return f"msg:{sender}:{msg.msg_id}", clean(msg.text())
 
 
@@ -1270,11 +1362,14 @@ async def captain_chat(ctx: Context, sender: str, msg: ChatMessage):
         return
     key, said = entry_key(sender, msg)
     if await claimed(key):
-        if key.startswith("tap:"):
+        # A re-delivery of the same message (or a copy within a second) is skipped quietly; a second real tap is told.
+        seen_id, seen_at = first_taps.get(key, ("", 0.0))
+        if key.startswith("tap:") and seen_id != str(msg.msg_id) and time.monotonic() - seen_at > 1:
             await ctx.send(sender, outbound(
                 "That tap was already handled, so I didn't run it twice. Every action is recorded once on "
                 "Detour's signed ledger. Say \"verify agents\" to see it.", end=False))
         return
+    first_taps[key] = (str(msg.msg_id), time.monotonic())
     await sign_action(captain, key, "tap" if key.startswith("tap:") else "message", said, "accepted")
     if VERIFY.search(clean(msg.text())):
         await ctx.send(sender, await id_cards_reply())
@@ -1343,6 +1438,10 @@ async def captain_chat(ctx: Context, sender: str, msg: ChatMessage):
         if has_details(text, trip) or choose(text) in ("", "Trip"):
             await plan_trip(ctx, sender, text, loose=True)
             return
+    if ordered := parse_order(text):
+        # Each friend's tap is their own order, whoever opened the menu.
+        item, _, place = ordered
+        text = f"order {item} for {await diner_name(sender)} at {place}"
     tag = uuid4().hex[:8]
     jobs[tag] = {"user": sender, "text": text}
     ctx.logger.info("ASI:One message: %s", text[:180])
