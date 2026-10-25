@@ -1,15 +1,13 @@
 import { existsSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { z } from "zod";
 import {
   AutonomyLevel,
-  DroidMessageType,
+  OutputFormatType,
   ToolConfirmationOutcome,
-  createSdkMcpServer,
-  createSession,
-  tool,
+  run,
 } from "@factory/droid-sdk/node";
+import { defaultQuery } from "@/lib/monitor";
 import type { Intent, Plan } from "@/lib/monitor";
 
 const EXEC_PATH = path.join(
@@ -21,136 +19,120 @@ const EXEC_PATH = path.join(
   "droid.exe",
 );
 
-const ALLOWED = ["dispatch_to_agent", "read_trip_state", "post_to_chat"];
+const AGENTS: Record<Intent, string> = {
+  breakfast: "Personal Chef",
+  gas: "Pit Stop",
+  medical: "Lifeline",
+  menu: "Waiter",
+  pay: "Cashier",
+  split: "Ledger",
+  trip: "Trip",
+  stay: "Stays",
+  activity: "Guide",
+  itinerary: "Planner",
+  chitchat: "none",
+};
 
-function agentFor(intent: Intent) {
-  if (intent === "breakfast") return "Personal Chef";
-  if (intent === "gas") return "Pit Stop";
-  if (intent === "medical") return "Lifeline";
-  if (intent === "menu") return "Waiter";
-  if (intent === "pay") return "Cashier";
-  if (intent === "split") return "Ledger";
-  if (intent === "trip") return "Trip";
-  return "none";
+const INTENTS = Object.keys(AGENTS) as Intent[];
+
+const JUDGEMENT = {
+  type: "object",
+  properties: {
+    intent: { type: "string", enum: INTENTS },
+    near: { type: "string", maxLength: 120 },
+    reason: { type: "string", maxLength: 200 },
+  },
+  required: ["intent", "near", "reason"],
+  additionalProperties: false,
+};
+
+function prompt(text: string, town: string) {
+  return `You are the judge for Detour, a road-trip concierge on Highway 1. The group is near ${town}, CA.
+Read one message and choose the single best intent. Do not answer the message. Do not use any tools.
+
+trip: starting or planning a trip, a route, a destination, or who is coming. Yatra handles it.
+breakfast: they want food or a place to eat now.
+gas: fuel or a gas station.
+medical: someone is hurt, sick, dizzy, or needs a clinic, pharmacy, or hospital.
+menu: they want a stop's menu, or to add or order a dish.
+pay: paying or checking out the group's order.
+split: who owes what, or the Splitwise split.
+stay: a place to sleep: a hotel, motel, inn, campsite, or where to stay tonight.
+activity: things to do, sights, hikes, beaches, events, or attractions to visit.
+itinerary: a day-by-day plan or schedule for a trip that is already set up.
+chitchat: anything else, such as thanks or comments about the view.
+
+Rules:
+- Medical outranks everything, even if food or gas is also mentioned.
+- A word inside a place name is not a request. "Seattle" is not about eating.
+- Judge what they want right now. "Road trip to Big Sur, we'll want breakfast" is trip.
+- Paying for a meal is pay, not breakfast.
+- Only saying where they are now, such as "we're in Monterey now", is chitchat with near set. trip is for planning a trip or saying who is coming.
+- "Plan our days", "make an itinerary", or "what should we do each day" is itinerary, not trip. "Let's plan a trip" is trip.
+
+near is the town, address, or landmark the person says they are at or want results near, written so a map search can find it, for example "Santa Cruz, CA". Use an empty string if they name no place. "me", "here", and "nearby" are not places.
+
+Reply with intent, near, and a short reason.
+
+Message: ${text}`;
 }
 
-export async function planWithDroid(
+// One Droid run with no tools that must return JSON matching the schema.
+export async function askDroid<T>(
   text: string,
-  town: string,
-): Promise<{ plan: Plan | null; note: string }> {
-  if (!process.env.FACTORY_API_KEY) {
-    return { plan: null, note: "FACTORY_API_KEY is missing." };
-  }
-  if (!existsSync(EXEC_PATH)) {
-    return { plan: null, note: "The local droid.exe was not found in this project." };
-  }
-
-  let dispatched: Plan | null = null;
-  const called: string[] = [];
-  const detour = createSdkMcpServer({
-    name: "detour",
-    version: "0.1.0",
-    tools: [
-      tool(
-        "read_trip_state",
-        "Read the current road-trip position. Read only.",
-        {},
-        async () =>
-          `Town: ${town}, CA. Route: San Francisco to Big Sur on Highway 1. Riders: Alex and Jordan.`,
-        { annotations: { readOnlyHint: true } },
-      ),
-      tool(
-        "dispatch_to_agent",
-        "Call exactly one specialist, then stop.",
-        {
-          intent: z.enum(["breakfast", "gas", "medical", "menu", "pay", "split", "trip", "chitchat"]),
-          query: z.string().min(3).max(160),
-          summary: z.string().min(3).max(240),
-        },
-        async (args) => {
-          called.push("dispatch_to_agent");
-          if (dispatched) return "One specialist is already chosen. Stop.";
-          const query = args.query.toLowerCase().includes(town.toLowerCase())
-            ? args.query
-            : `${args.query} in ${town}, CA`;
-          dispatched = {
-            intent: args.intent,
-            agent: agentFor(args.intent),
-            query,
-            summary: args.summary,
-          };
-          return `Dispatched ${dispatched.agent}. Stop now.`;
-        },
-        { annotations: { readOnlyHint: true } },
-      ),
-      tool(
-        "post_to_chat",
-        "Record a short note. This does not call a second specialist.",
-        { text: z.string().max(240) },
-        async () => {
-          called.push("post_to_chat");
-          return "Noted.";
-        },
-        { annotations: { readOnlyHint: true } },
-      ),
-    ],
-  });
-
-  let session: Awaited<ReturnType<typeof createSession>> | null = null;
+  schema: Record<string, unknown>,
+  timeoutMs: number,
+): Promise<{ output: T | null; note: string }> {
+  if (!process.env.FACTORY_API_KEY) return { output: null, note: "FACTORY_API_KEY is missing." };
+  if (!existsSync(EXEC_PATH)) return { output: null, note: "The local droid.exe was not found in this project." };
   try {
-    session = await createSession({
+    const result = await run(text, {
       apiKey: process.env.FACTORY_API_KEY,
       execPath: EXEC_PATH,
       cwd: mkdtempSync(path.join(tmpdir(), "detour-droid-")),
       autonomyLevel: AutonomyLevel.Off,
       disableBuiltinSkills: true,
       disabledToolIds: ["Script", "ToolSearch", "Execute", "Edit", "Create", "Read", "Grep"],
-      abortSignal: AbortSignal.timeout(28000),
-      mcpServers: [detour],
-      permissionHandler({ toolUses }) {
-        const blob = JSON.stringify(toolUses);
-        const allowed = ALLOWED.some((name) => blob.includes(name));
-        return allowed ? ToolConfirmationOutcome.ProceedOnce : ToolConfirmationOutcome.Cancel;
-      },
+      abortSignal: AbortSignal.timeout(timeoutMs),
+      permissionHandler: () => ToolConfirmationOutcome.Cancel,
+      outputFormat: { type: OutputFormatType.JsonSchema, schema },
     });
-
-    const prompt = `You are the Detour monitor. Read one message from a two-person road trip and call exactly one specialist.
-Call read_trip_state if you need the town, then call dispatch_to_agent once.
-intent breakfast means Personal Chef, gas means Pit Stop, medical means Lifeline.
-intent menu means Waiter: seeing a menu, or adding or ordering a dish at a stop.
-intent pay means Cashier: paying, checking out, or settling the order.
-intent split means Ledger: who owes what, or the Splitwise split.
-intent trip means the trip captain: starting or planning a road trip, or saying who is coming.
-If someone is hurt, dizzy, or needs a pharmacy or hospital, intent is medical even if they also mention food or gas.
-intent chitchat means no specialist.
-query is a short maps search that includes ${town}, CA.
-Do not edit files, run commands, or call any other tool.
-
-Message: ${text}`;
-
-    for await (const message of session.stream(prompt)) {
-      if (
-        message.type === DroidMessageType.ToolCall &&
-        ALLOWED.some((name) => message.name.includes(name))
-      ) {
-        called.push(message.name.includes("dispatch_to_agent") ? "dispatch_to_agent" : message.name);
-      }
-      if (message.type === DroidMessageType.Result && !message.success && !dispatched) {
-        throw new Error(message.error?.message ?? "Droid did not finish.");
-      }
+    if (!result.success) {
+      const detail = result.structuredOutputError?.message ?? result.error?.message ?? result.subtype;
+      return { output: null, note: `Droid did not finish (${clip(String(detail))}).` };
     }
+    return { output: result.structuredOutput as T, note: "" };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Droid failed.";
-    return { plan: dispatched, note: `Droid did not finish (${clip(message)}).` };
-  } finally {
-    await session?.close().catch(() => undefined);
+    return { output: null, note: `Droid did not finish (${clip(message)}).` };
   }
+}
 
-  if (!dispatched) {
-    return { plan: null, note: "Droid finished without calling dispatch_to_agent." };
+export async function planWithDroid(
+  text: string,
+  town: string,
+): Promise<{ plan: Plan | null; note: string }> {
+  const { output, note } = await askDroid<{ intent?: string; near?: string; reason?: string }>(
+    prompt(text, town),
+    JUDGEMENT,
+    28000,
+  );
+  if (!output) return { plan: null, note };
+  const intent = INTENTS.find((name) => name === output.intent);
+  if (!intent) {
+    return { plan: null, note: "Droid returned an intent outside the list." };
   }
-  const unique = [...new Set(called)];
-  return { plan: dispatched, note: `Droid called ${unique.join(", ") || "dispatch_to_agent"}.` };
+  const reason = clip(output.reason || `Chose ${intent}.`);
+  return {
+    plan: {
+      intent,
+      agent: AGENTS[intent],
+      query: defaultQuery(intent, town),
+      summary: reason,
+      near: (output.near ?? "").trim().slice(0, 120),
+    },
+    note: `Droid judged: ${intent}. ${reason}`,
+  };
 }
 
 function clip(text: string) {

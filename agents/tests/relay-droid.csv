@@ -1,4 +1,4 @@
-Question,Expected answer
+"Question","Expected answer"
 "I'm starving, breakfast?","DISPATCH Personal Chef"
 "where can we eat near Half Moon Bay?","DISPATCH Personal Chef"
 "recommend a restaurant for brunch","DISPATCH Personal Chef"
@@ -15,3 +15,11 @@ Question,Expected answer
 "charge the card for our order","DISPATCH Cashier"
 "split the bill","DISPATCH Ledger"
 "how do we split the cost?","DISPATCH Ledger"
+"let's go on a road trip","DISPATCH Trip"
+"road trip from San Jose to Seattle. Yuktaa is coming along with me","DISPATCH Trip"
+"road trip to Big Sur, we'll want breakfast on the way","DISPATCH Trip (Factory Droid decides this one because it mentions both a trip and food)"
+"the tank is almost empty","DISPATCH Pit Stop (Factory Droid decides this one because it has no keyword)"
+"Thanks, the ocean view is beautiful","DISPATCH none"
+"where should we stay tonight?","DISPATCH Stays"
+"things to do in Big Sur","DISPATCH Guide"
+"plan our days","DISPATCH Planner"

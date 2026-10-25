@@ -26,8 +26,13 @@ export async function POST(request: Request) {
 
   const member = body.member?.trim() ?? "";
   const item = body.item?.trim() ?? "";
-  if (!MEMBERS.has(member) || !item) {
-    return Response.json({ error: "Choose Alex or Jordan and a menu item." }, { status: 400 });
+  const trip = await client.query(api.trips.get, { tripId });
+  const members = new Set([...MEMBERS, trip?.leadName ?? "", ...(trip?.people ?? [])].filter(Boolean));
+  if (!members.has(member) || !item) {
+    return Response.json(
+      { error: `Choose someone on the trip (${[...members].join(", ")}) and a menu item.` },
+      { status: 400 },
+    );
   }
 
   const messages = await client.query(api.messages.list, { tripId });

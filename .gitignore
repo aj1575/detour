@@ -6,3 +6,5 @@ web/.env.local
 web/.convex/
 __pycache__/
 *.pyc
+agents/run.log
+agents/run.err.log

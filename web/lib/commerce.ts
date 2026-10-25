@@ -117,7 +117,12 @@ export async function chargeTestPayment(cents: number, description: string, idem
   return { id: payload.id, status: payload.status || "unknown" };
 }
 
-export async function splitBill(description: string, cents: number, friendEmail: string) {
+export async function splitBill(
+  description: string,
+  cents: number,
+  friendEmail: string,
+  friendName = "Jordan",
+) {
   const key = process.env.SPLITWISE_API_KEY;
   if (!key) throw new Error("SPLITWISE_API_KEY is missing.");
   const me = await splitwise(key, "get_current_user");
@@ -130,7 +135,7 @@ export async function splitBill(description: string, cents: number, friendEmail:
   };
   if (friendEmail) {
     groupBody["users__0__email"] = friendEmail;
-    groupBody["users__0__first_name"] = "Jordan";
+    groupBody["users__0__first_name"] = friendName;
     groupBody["users__0__last_name"] = "Detour";
   }
   const group = await splitwise(key, "create_group", groupBody);

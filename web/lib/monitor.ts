@@ -8,6 +8,9 @@ export type Intent =
   | "pay"
   | "split"
   | "trip"
+  | "stay"
+  | "activity"
+  | "itinerary"
   | "chitchat";
 
 export type Plan = {
@@ -15,6 +18,7 @@ export type Plan = {
   agent: string;
   query: string;
   summary: string;
+  near?: string;
 };
 
 export type Place = {
@@ -24,55 +28,95 @@ export type Place = {
   phone: string;
   status: string;
   buzz?: string;
+  miles?: number;
 };
+
+export type Origin = { lat: number; lng: number; town: string; nearby?: boolean; byRelevance?: boolean };
+
+export function nearbyQuery(intent: Intent, text: string) {
+  if (intent === "gas") return "gas station";
+  if (intent === "medical") return "urgent care clinic or hospital";
+  if (intent === "stay") return /\b(camp|campsite|camping)\b/i.test(text) ? "campground" : "hotel";
+  if (intent === "activity") return "things to do";
+  return /\b(breakfast|brunch)\b/i.test(text) ? "breakfast restaurant" : "restaurant";
+}
+
+export async function geocode(place: string): Promise<{ lat: number; lng: number; label: string } | null> {
+  const key = process.env.GOOGLE_MAPS_API_KEY;
+  if (!key || !place.trim()) return null;
+  const response = await fetch("https://places.googleapis.com/v1/places:searchText", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-goog-api-key": key,
+      "x-goog-fieldmask": "places.location,places.formattedAddress",
+    },
+    body: JSON.stringify({ textQuery: place, maxResultCount: 1, languageCode: "en" }),
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!response.ok) return null;
+  const data = (await response.json()) as {
+    places?: Array<{ location?: { latitude: number; longitude: number }; formattedAddress?: string }>;
+  };
+  const top = data.places?.[0];
+  if (!top?.location) return null;
+  return { lat: top.location.latitude, lng: top.location.longitude, label: place.trim() };
+}
+
+function milesBetween(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const rad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = rad(b.lat - a.lat);
+  const dLng = rad(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 3958.8 * 2 * Math.asin(Math.sqrt(h));
+}
 
 export function defaultQuery(intent: Intent, town: string) {
   if (intent === "gas") return `gas station in ${town}, CA`;
   if (intent === "medical") return `urgent care clinic or hospital in ${town}, CA`;
   if (intent === "breakfast") return `breakfast restaurant in ${town}, CA`;
+  if (intent === "stay") return `hotel in ${town}, CA`;
+  if (intent === "activity") return `things to do in ${town}, CA`;
   return "";
 }
 
+const FALLBACK: Array<[Intent, string, string[]]> = [
+  ["medical", "Lifeline", ["dizzy", "hurt", "sick", "pain", "pharmacy", "hospital", "emergency", "clinic"]],
+  ["itinerary", "Planner", ["itinerary", "schedule", "day by day", "plan our days", "plan the days"]],
+  ["stay", "Stays", ["hotel", "motel", "inn", "stay", "lodging", "campsite", "camping", "airbnb", "sleep"]],
+  ["activity", "Guide", ["things to do", "activities", "attractions", "sights", "hike", "hikes", "events"]],
+  ["gas", "Pit Stop", ["gas", "fuel", "refuel"]],
+  ["pay", "Cashier", ["pay", "checkout", "check out"]],
+  ["split", "Ledger", ["split", "owe", "owes", "splitwise"]],
+  ["menu", "Waiter", ["menu", "order"]],
+  ["breakfast", "Personal Chef", ["breakfast", "brunch", "hungry", "starving", "food", "eat", "restaurant"]],
+  ["trip", "Trip", ["trip", "road trip"]],
+];
+
+// Used when Droid cannot answer, so a request still reaches a specialist.
 export function classify(text: string, town = "Half Moon Bay"): Plan {
-  const lowered = text.toLowerCase();
-  const intent: Intent = ["dizzy", "hurt", "sick", "pain", "pharmacy", "hospital", "emergency"].some(
-    (word) => lowered.includes(word),
-  )
-    ? "medical"
-    : ["gas", "fuel"].some((word) => lowered.includes(word))
-      ? "gas"
-      : ["breakfast", "hungry", "starving", "food", "eat", "restaurant"].some((word) =>
-            lowered.includes(word),
-          )
-        ? "breakfast"
-        : "chitchat";
-  const agent =
-    intent === "breakfast"
-      ? "Personal Chef"
-      : intent === "gas"
-        ? "Pit Stop"
-        : intent === "medical"
-          ? "Lifeline"
-          : "none";
+  const lowered = text.replace(/’/g, "'").toLowerCase();
+  const hit = FALLBACK.find(([, , words]) => new RegExp(`\\b(?:${words.join("|")})\\b`).test(lowered));
+  const [intent, agent]: [Intent, string] = hit ? [hit[0], hit[1]] : ["chitchat", "none"];
   return {
     intent,
     agent,
     query: defaultQuery(intent, town),
-    summary:
-      intent === "chitchat"
-        ? "No specialist was called."
-        : `Traveler needs ${intent}. Route to ${agent}.`,
+    summary: intent === "chitchat" ? "No specialist was called." : `Traveler needs ${intent}. Route to ${agent}.`,
   };
 }
 
 export async function findPlaces(
   query: string,
-  bias?: { lat: number; lng: number; town: string },
+  bias?: Origin,
+  withBuzz = true,
 ): Promise<{ places: Place[]; source: string }> {
-  const buzzPromise = scoreBuzz(query);
+  const buzzPromise = withBuzz
+    ? scoreBuzz(query)
+    : Promise.resolve({ map: new Map<string, string>(), note: "Review buzz was skipped." });
   const googleError = await googlePlaces(query, bias).catch((error: unknown) => error);
   if (Array.isArray(googleError)) {
-    const buzz = await buzzPromise;
+    const buzz = await withinBuzzBudget(buzzPromise);
     return { places: mergeBuzz(googleError, buzz.map), source: placeSource(bias, buzz.note) };
   }
 
@@ -129,10 +173,12 @@ export async function findPlaces(
   };
 }
 
-function placeSource(bias: { town: string } | undefined, buzzNote: string) {
-  const where = bias
-    ? `Google Places, searched near ${bias.town} on the Highway 1 route from the Routes API`
-    : "Google Places";
+function placeSource(bias: Origin | undefined, buzzNote: string) {
+  const where = !bias
+    ? "Google Places"
+    : bias.nearby
+      ? `Google Places, ranked by distance from ${bias.town}`
+      : `Google Places, searched near ${bias.town} on the Highway 1 route from the Routes API`;
   return `${where}. ${buzzNote.replace(/\.$/, "")}.`;
 }
 
@@ -150,14 +196,14 @@ function mergeBuzz(places: Place[], buzz: Map<string, string>) {
 
 function placeType(query: string) {
   if (query.startsWith("gas station")) return "gas_station";
-  if (query.startsWith("breakfast restaurant")) return "restaurant";
+  if (query.startsWith("breakfast restaurant") || query.startsWith("restaurant")) return "restaurant";
+  if (query.startsWith("hotel")) return "lodging";
+  if (query.startsWith("campground")) return "campground";
+  if (query.startsWith("things to do")) return "tourist_attraction";
   return "";
 }
 
-async function googlePlaces(
-  query: string,
-  bias?: { lat: number; lng: number },
-): Promise<Place[]> {
+async function googlePlaces(query: string, bias?: Origin): Promise<Place[]> {
   const key = process.env.GOOGLE_MAPS_API_KEY;
   if (!key) throw new Error("GOOGLE_MAPS_API_KEY is missing.");
 
@@ -167,7 +213,7 @@ async function googlePlaces(
       "content-type": "application/json",
       "x-goog-api-key": key,
       "x-goog-fieldmask":
-        "places.displayName,places.formattedAddress,places.rating,places.nationalPhoneNumber,places.businessStatus,places.currentOpeningHours.openNow",
+        "places.displayName,places.formattedAddress,places.rating,places.nationalPhoneNumber,places.businessStatus,places.currentOpeningHours.openNow,places.location",
     },
     body: JSON.stringify({
       textQuery: query,
@@ -179,9 +225,10 @@ async function googlePlaces(
             locationBias: {
               circle: {
                 center: { latitude: bias.lat, longitude: bias.lng },
-                radius: 12000,
+                radius: bias.nearby ? 8000 : 12000,
               },
             },
+            ...(bias.nearby && !bias.byRelevance ? { rankPreference: "DISTANCE" } : {}),
           }
         : {}),
     }),
@@ -200,9 +247,10 @@ async function googlePlaces(
       nationalPhoneNumber?: string;
       businessStatus?: string;
       currentOpeningHours?: { openNow?: boolean };
+      location?: { latitude: number; longitude: number };
     }>;
   };
-  const places = (data.places ?? []).slice(0, 5).map((place) => {
+  const places = (data.places ?? []).slice(0, 5).map((place): Place => {
     const closed =
       place.businessStatus === "CLOSED_PERMANENTLY" ||
       place.businessStatus === "CLOSED_TEMPORARILY" ||
@@ -215,22 +263,51 @@ async function googlePlaces(
       rating: typeof place.rating === "number" ? `${place.rating} stars` : "Rating unavailable",
       phone: place.nationalPhoneNumber || "",
       status,
+      ...(bias?.nearby && place.location
+        ? {
+            miles:
+              Math.round(
+                milesBetween(bias, { lat: place.location.latitude, lng: place.location.longitude }) * 10,
+              ) / 10,
+          }
+        : {}),
     };
   });
   if (places.length === 0) throw new Error("Google Places returned no places.");
   return places;
 }
 
-export function speakable(intent: Intent, places: Place[]) {
+export function speakable(intent: Intent, places: Place[], near?: string) {
   const lines = places.map((place, index) => {
     const phone = place.phone ? `, ${place.phone}` : "";
     const buzz = place.buzz ? `, ${place.buzz}` : "";
-    return `${index + 1}. ${place.name}, ${place.detail}, ${place.rating}, ${place.status}${buzz}${phone}`;
+    const away = typeof place.miles === "number" ? `, ${place.miles} mi away` : "";
+    return `${index + 1}. ${place.name}${away}, ${place.detail}, ${place.rating}, ${place.status}${buzz}${phone}`;
   });
   const list = `${places.length} options. ${lines.join(" ")}`;
+  const where = near ? `Closest to ${near}. ` : "";
   if (intent === "medical") {
-    return `If this is an emergency, call 911 now. ${list}`;
+    return `If this is an emergency, call 911 now. ${where}${list}`;
   }
-  if (intent === "gas") return `Fuel stops ahead. ${list}`;
-  return `Food ahead on the route. ${list}`;
+  if (intent === "gas") return `${near ? where : "Fuel stops ahead. "}${list}`;
+  if (intent === "stay") return `Places to stay${near ? ` near ${near}` : ""}. Vote for the one you want and I'll keep the tally. ${list}`;
+  if (intent === "activity") return `Things to do${near ? ` near ${near}` : ""}. Vote for your favourite. ${list}`;
+  return `${near ? where : "Food ahead on the route. "}${list}`;
+}
+
+function clip(text: string) {
+  return text.replace(/\s+/g, " ").slice(0, 180);
+}
+
+const BUZZ_BUDGET_MS = 4000;
+
+// Review buzz is a bonus. Places go out after a short wait even if the Apify actor is still running.
+function withinBuzzBudget(buzz: Promise<{ map: Map<string, string>; note: string }>) {
+  const late = new Promise<{ map: Map<string, string>; note: string }>((resolve) =>
+    setTimeout(
+      () => resolve({ map: new Map(), note: "route-buzz-finder was still running, so places went out without buzz." }),
+      BUZZ_BUDGET_MS,
+    ),
+  );
+  return Promise.race([buzz, late]);
 }

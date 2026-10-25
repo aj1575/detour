@@ -34,7 +34,12 @@ export async function POST(request: Request) {
       detail: note,
       createdAt: Date.now(),
     });
-    return Response.json({ agent: plan.agent, intent: plan.intent, summary: plan.summary });
+    return Response.json({
+      agent: plan.agent,
+      intent: plan.intent,
+      summary: plan.summary,
+      near: plan.near ?? "",
+    });
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Droid could not read the message.";
     return Response.json({ error: detail }, { status: 502 });

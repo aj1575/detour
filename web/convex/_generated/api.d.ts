@@ -8,9 +8,13 @@
  * @module
  */
 
+import type * as actions from "../actions.js";
+import type * as crons from "../crons.js";
 import type * as messages from "../messages.js";
 import type * as monitor from "../monitor.js";
+import type * as options from "../options.js";
 import type * as orders from "../orders.js";
+import type * as presence from "../presence.js";
 import type * as trips from "../trips.js";
 
 import type {
@@ -20,9 +24,13 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  actions: typeof actions;
+  crons: typeof crons;
   messages: typeof messages;
   monitor: typeof monitor;
+  options: typeof options;
   orders: typeof orders;
+  presence: typeof presence;
   trips: typeof trips;
 }>;
 
@@ -52,4 +60,6 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  presence: import("@convex-dev/presence/_generated/component.js").ComponentApi<"presence">;
+};

@@ -19,7 +19,8 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  const friendEmail = body.friendEmail?.trim() ?? "";
+  const friendEmail = body.friendEmail?.trim() || process.env.SPLITWISE_FRIEND_EMAIL?.trim() || "";
+  const friendName = process.env.SPLITWISE_FRIEND_NAME?.trim() || "Jordan";
   if (friendEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(friendEmail)) {
     return Response.json({ error: "Enter a full email for the Splitwise share." }, { status: 400 });
   }
@@ -43,10 +44,10 @@ export async function POST(request: Request) {
     const payment = await chargeTestPayment(cents, description, `detour-${orders.map((order) => order._id).join("-")}`);
     let splitNote = "";
     try {
-      const split = await splitBill(`${description}. Stripe test ${payment.id}.`, cents, friendEmail);
+      const split = await splitBill(`${description}. Stripe test ${payment.id}.`, cents, friendEmail, friendName);
       splitNote = split.shared
-        ? `Splitwise expense ${split.expenseId} in group ${split.groupId}, split equally.`
-        : `Splitwise expense ${split.expenseId} in group ${split.groupId}. Add Jordan's email to share it.`;
+        ? `Splitwise expense ${split.expenseId} in group ${split.groupId}, split equally with ${friendName}. It shows on both Splitwise accounts.`
+        : `Splitwise expense ${split.expenseId} in group ${split.groupId}. Set SPLITWISE_FRIEND_EMAIL to share it.`;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Splitwise failed.";
       splitNote = `The Stripe test payment succeeded, and Splitwise did not: ${message}`;
@@ -56,7 +57,7 @@ export async function POST(request: Request) {
       tripId,
       author: "Cashier",
       role: "agent",
-      body: `Stripe test payment ${payment.id} is ${payment.status} for $${dollars} at ${placeName}. Card pm_card_visa. This is not a real charge.`,
+      body: `Proof of concept: Stripe test payment ${payment.id} is ${payment.status} for $${dollars} at ${placeName}, paid with Stripe's test Visa. No real money moved.`,
       createdAt: Date.now(),
     });
     await client.mutation(api.messages.add, {
@@ -76,7 +77,7 @@ export async function POST(request: Request) {
       createdAt: Date.now(),
     });
     await client.mutation(api.orders.clearPlace, { tripId, placeName });
-    return Response.json({ ok: true, paymentId: payment.id, status: payment.status, splitNote });
+    return Response.json({ ok: true, paymentId: payment.id, status: payment.status, dollars, splitNote });
   } catch (error) {
     const detail = error instanceof Error ? error.message : "The test payment failed.";
     await client.mutation(api.monitor.add, {

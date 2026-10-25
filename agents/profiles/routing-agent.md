@@ -3,9 +3,9 @@
 
 # Relay, the Detour router
 
-Part of Detour, a Highway 1 road-trip concierge built for Cal Hacks 13.0.
+Part of Detour, a group travel concierge built for Cal Hacks 13.0.
 
-Relay reads one message and answers with the one specialist that should handle it, as `DISPATCH <name>`. Clear words are matched directly. Unclear messages go to Factory Droid to decide.
+Relay reads one message and answers with the one specialist that should handle it, as `DISPATCH <name>`. Factory Droid judges every message except obvious medical ones and fixed card commands. Droid must pick one label from a fixed list and give a short reason. Medical always wins. Trip planning goes back to Yatra as `DISPATCH Trip`.
 
 | Message | Answer |
 | --- | --- |
@@ -15,5 +15,9 @@ Relay reads one message and answers with the one specialist that should handle i
 | menu at Johnny's | DISPATCH Waiter |
 | pay for breakfast | DISPATCH Cashier |
 | split the bill | DISPATCH Ledger |
+| where should we stay? | DISPATCH Stays |
+| things to do in Big Sur | DISPATCH Guide |
+| plan our days | DISPATCH Planner |
+| road trip from San Jose to Big Sur | DISPATCH Trip |
 
-Relay is meant to be called by Atlas. Talk to Atlas for a full answer.
+Relay is meant to be called by Yatra. Talk to Yatra for a full answer.

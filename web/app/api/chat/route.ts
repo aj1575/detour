@@ -1,107 +1,99 @@
 import { api, convexClient } from "@/lib/convex";
 import { planWithDroid } from "@/lib/droid";
-import { classify, defaultQuery, findPlaces, speakable } from "@/lib/monitor";
+import { classify } from "@/lib/monitor";
 import { getCoastRoute } from "@/lib/route";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { Plan } from "@/lib/monitor";
 
-export async function POST(request: Request) {
-  let tripId: Id<"trips">;
-  let author = "";
-  let text = "";
-  try {
-    const body = (await request.json()) as {
-      tripId?: string;
-      author?: string;
-      text?: string;
-    };
-    if (!body.tripId || !body.author?.trim() || !body.text?.trim()) {
-      return Response.json(
-        { error: "Need a trip, an author, and a message." },
-        { status: 400 },
-      );
-    }
-    if (body.text.trim().length > 500) {
-      return Response.json({ error: "Keep the message under 500 characters." }, { status: 400 });
-    }
-    tripId = body.tripId as Id<"trips">;
-    author = body.author.trim();
-    text = body.text.trim();
-  } catch {
-    return Response.json({ error: "The message could not be read." }, { status: 400 });
-  }
+// The board's message box and voice search. Droid picks the specialist, then the same routes the
+// ASI:One agents use do the work, so a spoken request on the board reaches the whole concierge.
+const SEARCHERS = new Set(["Personal Chef", "Pit Stop", "Lifeline", "Stays", "Guide"]);
+const AT_DESTINATION = new Set(["Stays", "Guide"]);
 
+export async function POST(request: Request) {
+  const body = (await request.json().catch(() => null)) as { tripId?: string; author?: string; text?: string } | null;
+  const text = body?.text?.trim() ?? "";
+  const author = body?.author?.trim() || "Guest";
+  if (!body?.tripId || !text) {
+    return Response.json({ error: "Need a trip and a message." }, { status: 400 });
+  }
+  if (text.length > 500) {
+    return Response.json({ error: "Keep the message under 500 characters." }, { status: 400 });
+  }
+  const tripId = body.tripId as Id<"trips">;
   const client = convexClient();
-  await client.mutation(api.messages.add, {
+  const trip = await client.query(api.trips.get, { tripId });
+
+  let plan: Plan;
+  let note: string;
+  try {
+    const coast = await getCoastRoute();
+    const droid = await planWithDroid(text, trip?.destination || coast.town);
+    plan = droid.plan ?? classify(text, coast.town);
+    note = droid.plan ? droid.note : `${droid.note} The message was classified from its words.`;
+  } catch (error) {
+    plan = classify(text);
+    note = error instanceof Error ? error.message : "Droid could not read the message.";
+  }
+  await client.mutation(api.monitor.add, {
     tripId,
-    author,
-    role: "human",
-    body: text,
+    intent: plan.intent,
+    agent: plan.agent,
+    plan: plan.summary,
+    status: plan.agent === "none" || plan.agent === "Trip" ? "skipped" : "running",
+    detail: `From the board. ${note}`,
     createdAt: Date.now(),
   });
 
-  try {
-    const coast = await getCoastRoute();
-    const droid = await planWithDroid(text, coast.town);
-    let plan: Plan;
-    let note: string;
-    if (droid.plan) {
-      plan = droid.plan;
-      note = droid.note;
-    } else {
-      plan = await classify(text, coast.town);
-      note = `${droid.note} The message was classified from its words.`;
-    }
-
-    if (!defaultQuery(plan.intent, coast.town)) {
-      await client.mutation(api.monitor.add, {
-        tripId,
-        intent: plan.intent,
-        agent: "none",
-        plan: plan.summary,
-        status: "skipped",
-        detail: `${note} No specialist was called.`,
-        createdAt: Date.now(),
-      });
-      return Response.json({ ok: true });
-    }
-
-    await client.mutation(api.monitor.add, {
-      tripId,
-      intent: plan.intent,
-      agent: plan.agent,
-      plan: plan.summary,
-      status: "running",
-      detail: `Search: ${plan.query}. ${note}`,
-      createdAt: Date.now(),
+  const origin = new URL(request.url).origin;
+  const call = async (path: string, payload: object) => {
+    const response = await fetch(`${origin}${path}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
     });
+    const result = (await response.json().catch(() => ({}))) as { error?: string; reply?: string };
+    if (!response.ok) throw new Error(result.error || `${path} returned ${response.status}.`);
+    return result;
+  };
 
-    const found = await findPlaces(plan.query, coast);
+  try {
+    if (SEARCHERS.has(plan.agent)) {
+      const near = plan.near || (AT_DESTINATION.has(plan.agent) ? trip?.destination ?? "" : trip?.near ?? "");
+      const result = await call("/api/specialist", {
+        tripId,
+        author,
+        agent: plan.agent,
+        text,
+        near,
+        home: trip?.origin ?? "",
+      });
+      return Response.json({ ok: true, agent: plan.agent, reply: result.reply });
+    }
+    await client.mutation(api.messages.add, { tripId, author, role: "human", body: text, createdAt: Date.now() });
+    if (plan.agent === "Planner") {
+      await call("/api/itinerary", { tripId, text });
+      return Response.json({ ok: true, agent: plan.agent });
+    }
+    const hint =
+      plan.agent === "none"
+        ? "Ask for a place to stay, things to do, a day-by-day plan, food, gas, or urgent care."
+        : "Menus, payments, and the trip setup happen in the ASI:One chat with Yatra. Use the order desk on this board for the group order.";
     await client.mutation(api.messages.add, {
       tripId,
-      author: plan.agent,
+      author: "Yatra",
       role: "agent",
-      body: speakable(plan.intent, found.places),
-      placesJson: JSON.stringify(found.places),
+      body: hint,
       createdAt: Date.now(),
     });
+    return Response.json({ ok: true, agent: plan.agent, reply: hint });
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "The request failed.";
     await client.mutation(api.monitor.add, {
       tripId,
       intent: plan.intent,
       agent: plan.agent,
       plan: plan.summary,
-      status: "done",
-      detail: `Posted ${found.places.length} places from ${found.source}.`,
-      createdAt: Date.now(),
-    });
-    return Response.json({ ok: true });
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : "The monitor failed.";
-    await client.mutation(api.monitor.add, {
-      tripId,
-      intent: "error",
-      agent: "none",
-      plan: "The local monitor could not finish.",
       status: "error",
       detail,
       createdAt: Date.now(),

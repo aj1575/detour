@@ -1,0 +1,11 @@
+Question,Expected answer
+"plan our days","A trip plan card titled Your trip plan, with one to three days and timed stops at real places near the destination, ending with the drive home. If no trip was set up, it asks where you're headed."
+"make an itinerary for the trip","A day-by-day plan with clock times, places, and short notes."
+"what should we do each day?","A day-by-day plan for the trip."
+"build a schedule for Saturday and Sunday","A two-day plan with timed stops."
+"give us a day by day plan","A day-by-day plan with timed stops at real places."
+"plan the days, we love hiking","A plan that favors hikes and parks near the destination."
+"itinerary please","A day-by-day plan for the trip."
+"what's the plan for tomorrow?","A plan with timed stops."
+"one-day itinerary","A plan with at least one day of timed stops."
+"plan our days around the beach","A plan that includes beaches or coastal stops near the destination."
