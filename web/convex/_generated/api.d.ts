@@ -14,6 +14,7 @@ import type * as messages from "../messages.js";
 import type * as monitor from "../monitor.js";
 import type * as options from "../options.js";
 import type * as orders from "../orders.js";
+import type * as photos from "../photos.js";
 import type * as presence from "../presence.js";
 import type * as trips from "../trips.js";
 
@@ -30,6 +31,7 @@ declare const fullApi: ApiFromModules<{
   monitor: typeof monitor;
   options: typeof options;
   orders: typeof orders;
+  photos: typeof photos;
   presence: typeof presence;
   trips: typeof trips;
 }>;

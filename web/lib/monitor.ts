@@ -11,6 +11,7 @@ export type Intent =
   | "stay"
   | "activity"
   | "itinerary"
+  | "post"
   | "chitchat";
 
 export type Plan = {
@@ -82,6 +83,7 @@ export function defaultQuery(intent: Intent, town: string) {
 
 const FALLBACK: Array<[Intent, string, string[]]> = [
   ["medical", "Lifeline", ["dizzy", "hurt", "sick", "pain", "pharmacy", "hospital", "emergency", "clinic"]],
+  ["post", "Curator", ["post", "caption", "curate", "instagram", "carousel", "album", "photos", "pics"]],
   ["itinerary", "Planner", ["itinerary", "schedule", "day by day", "plan our days", "plan the days"]],
   ["stay", "Stays", ["hotel", "motel", "inn", "stay", "lodging", "campsite", "camping", "airbnb", "sleep"]],
   ["activity", "Guide", ["things to do", "activities", "attractions", "sights", "hike", "hikes", "events"]],

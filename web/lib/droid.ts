@@ -30,6 +30,7 @@ const AGENTS: Record<Intent, string> = {
   stay: "Stays",
   activity: "Guide",
   itinerary: "Planner",
+  post: "Curator",
   chitchat: "none",
 };
 
@@ -60,6 +61,7 @@ split: who owes what, or the Splitwise split.
 stay: a place to sleep: a hotel, motel, inn, campsite, or where to stay tonight.
 activity: things to do, sights, hikes, beaches, events, or attractions to visit.
 itinerary: a day-by-day plan or schedule for a trip that is already set up.
+post: pick the best trip photos for a social media post, or write a caption for them.
 chitchat: anything else, such as thanks or comments about the view.
 
 Rules:

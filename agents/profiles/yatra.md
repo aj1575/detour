@@ -22,6 +22,8 @@ To bring your friends in, ask your ASI:One AI "Add Jordan and Priya to this chat
 | where should we stay? | StayScout: places near your destination, as a card everyone votes on |
 | things to do there | Local Guide: sights and hikes, as a card everyone votes on |
 | plan our days | Itinerary: a day-by-day plan from real places and the group's votes |
+| (share photos with Yatra) | Yatra adds them to the trip album |
+| curate a post | Curator: the photos that look best together, with a caption and hashtags |
 
 ## On the road
 

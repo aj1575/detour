@@ -45,6 +45,7 @@ const AGENT_NAMES: Record<string, string> = {
   Stays: "StayScout",
   Guide: "Local Guide",
   Planner: "Itinerary",
+  Curator: "Curator",
 };
 
 export function TripApp() {
@@ -385,8 +386,125 @@ function Board({ trip, tripId, loading }: { trip: Doc<"trips"> | null; tripId: I
           </details>
         </aside>
       </div>
+      {tripId ? <Album tripId={tripId} name={name} /> : null}
       <IdCards />
     </div>
+  );
+}
+
+// The photos the group shared, and the latest post the Curator made from them.
+function Album({ tripId, name }: { tripId: Id<"trips">; name: string }) {
+  const photos = useQuery(api.photos.album, { tripId }) ?? [];
+  const posts = useQuery(api.photos.posts, { tripId }) ?? [];
+  const [busy, setBusy] = useState("");
+  const [error, setError] = useState("");
+  const latest = posts[0];
+
+  async function upload(files: FileList | null) {
+    if (!files?.length) return;
+    setError("");
+    let done = 0;
+    for (const file of Array.from(files)) {
+      setBusy(`Adding ${done + 1} of ${files.length}`);
+      const form = new FormData();
+      form.append("photo", file);
+      form.append("sharedBy", name);
+      form.append("tripId", tripId);
+      const response = await fetch("/api/photos", { method: "POST", body: form }).catch(() => null);
+      if (!response?.ok) {
+        const payload = (await response?.json().catch(() => ({}))) as { error?: string } | undefined;
+        setError(payload?.error || "A photo did not upload.");
+      }
+      done += 1;
+    }
+    setBusy("");
+  }
+
+  async function curatePost() {
+    setBusy("The Curator is picking photos");
+    setError("");
+    const response = await fetch("/api/curate", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tripId, text: "Curate a post from our trip photos." }),
+    }).catch(() => null);
+    if (!response?.ok) {
+      const payload = (await response?.json().catch(() => ({}))) as { error?: string } | undefined;
+      setError(payload?.error || "The post could not be made.");
+    }
+    setBusy("");
+  }
+
+  return (
+    <section aria-label="Trip album" className="border-t border-[var(--line)] px-5 py-5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-semibold">Trip album</h2>
+          <p className="text-[var(--muted)]">
+            Share photos with Yatra in ASI:One, or add them here. Say &quot;curate a post&quot; and the Curator picks the
+            set that looks best together.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <label className="btn-secondary inline-flex min-h-11 cursor-pointer items-center rounded-xl px-4 font-semibold">
+            Add photos
+            <input type="file" accept="image/*" multiple className="sr-only" onChange={(event) => void upload(event.target.files)} />
+          </label>
+          <button
+            type="button"
+            className="btn-primary min-h-11 rounded-xl px-4 font-semibold"
+            disabled={Boolean(busy) || photos.length === 0}
+            onClick={() => void curatePost()}
+          >
+            Curate a post
+          </button>
+        </div>
+      </div>
+      {busy ? <p className="mt-2 font-semibold" aria-live="polite">{busy}…</p> : null}
+      {error ? <p role="alert" className="mt-2 font-semibold">{error}</p> : null}
+
+      {latest ? (
+        <article className="mt-4 rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4">
+          <p className="text-xs font-semibold tracking-[0.2em] text-[var(--teal)]">LATEST POST · {latest.theme.toUpperCase()}</p>
+          <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6">
+            {latest.photos.map((photo, index) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={photo._id}
+                src={photo.url}
+                alt={`Post photo ${index + 1}, ${photo.look.theme}`}
+                className={`aspect-square w-full rounded-xl object-cover ${index === 0 ? "col-span-2 row-span-2" : ""}`}
+              />
+            ))}
+          </div>
+          <p className="mt-3 text-lg">{latest.caption}</p>
+          <p className="mt-1 text-[var(--teal)]">{latest.hashtags.join(" ")}</p>
+          <p className="mt-1 text-sm text-[var(--muted)]">{latest.source}</p>
+        </article>
+      ) : null}
+
+      <ul className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-6 lg:grid-cols-8">
+        {photos.map((photo) => {
+          const inPost = latest?.photoIds.includes(photo._id);
+          return (
+            <li key={photo._id} className="relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={photo.url} alt={`${photo.look.theme} photo shared by ${photo.sharedBy}`} className="aspect-square w-full rounded-xl object-cover" />
+              <span className="absolute inset-x-1 bottom-1 truncate rounded-lg bg-black/70 px-2 py-0.5 text-[11px] text-white">
+                {inPost ? "In post · " : ""}
+                {photo.look.theme} · {photo.look.score.toFixed(1)}
+              </span>
+              <span className="absolute right-1 top-1 flex gap-0.5" aria-hidden>
+                {photo.look.palette.slice(0, 3).map((color) => (
+                  <span key={color} className="h-3 w-3 rounded-full border border-white/60" style={{ background: color }} />
+                ))}
+              </span>
+            </li>
+          );
+        })}
+        {photos.length === 0 ? <li className="col-span-full text-[var(--muted)]">No photos yet.</li> : null}
+      </ul>
+    </section>
   );
 }
 
@@ -395,7 +513,7 @@ function IdCards() {
   const passports = useQuery(api.actions.passports) ?? [];
   const recent = useQuery(api.actions.recent, { limit: 8 }) ?? [];
   if (passports.length === 0) return null;
-  const order = ["Yatra", "Relay", "StayScout", "Local Guide", "Itinerary", "BiteScout", "FuelFox", "CareRoute", "MenuScout", "PayPilot", "Ledger"];
+  const order = ["Yatra", "Relay", "StayScout", "Local Guide", "Itinerary", "Curator", "BiteScout", "FuelFox", "CareRoute", "MenuScout", "PayPilot", "Ledger"];
   const sorted = [...passports].sort((a, b) => order.indexOf(a.name) - order.indexOf(b.name));
   return (
     <section aria-label="Agent ID cards" className="border-t border-[var(--line)] px-5 py-5">

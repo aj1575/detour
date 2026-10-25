@@ -1,6 +1,7 @@
 """All Detour agents that register on Agentverse."""
 
 import asyncio
+import base64
 import contextlib
 import hashlib
 import json
@@ -25,9 +26,12 @@ from uagents_core.contrib.protocols.chat import (
     ChatMessage,
     EndSessionContent,
     MetadataContent,
+    ResourceContent,
     TextContent,
     chat_protocol_spec,
 )
+from uagents_core.config import AgentverseConfig
+from uagents_core.storage import ExternalStorage
 from uagents_core.contrib.protocols.chat.cards import (
     CarouselCardPayload,
     CarouselItem,
@@ -120,6 +124,12 @@ ROSTER = (
         "Builds a day-by-day trip plan with Factory Droid from real Google Places results and the group's votes.",
         ["plan our days", "make an itinerary for the trip", "what should we do each day?"],
     ),
+    (
+        "Curator", "detour-curator", "curator", 8014,
+        "Turns the photos your group shares during the trip into a post: picks the set that looks best together "
+        "and writes the caption and hashtags.",
+        ["curate a post from our trip photos", "pick our best photos for Instagram", "write a caption for our pics"],
+    ),
 )
 
 
@@ -175,7 +185,7 @@ def make_agent(
     return agent
 
 
-captain, droid, chef, pit, lifeline, waiter, cashier, ledger, stays, guide, planner = (
+captain, droid, chef, pit, lifeline, waiter, cashier, ledger, stays, guide, planner, curator = (
     make_agent(*row) for row in ROSTER
 )
 
@@ -190,6 +200,7 @@ NAMES = {
     "Stays": stays,
     "Guide": guide,
     "Planner": planner,
+    "Curator": curator,
 }
 BY_ADDRESS = {agent.address: name for name, agent in NAMES.items()}
 jobs: dict[str, dict[str, str]] = {}
@@ -299,6 +310,7 @@ ROUTES = (
     ("Stays", "hotel|motel|inn|lodging|airbnb|campsite|campground|camping|place to stay|where to stay|stay tonight"),
     ("Guide", "things to do|activities|attractions|sights|sightseeing|hikes?|events"),
     ("Planner", "itinerary|schedule|day by day|plan (?:our|the) days|each day"),
+    ("Curator", "post|caption|curate|instagram|carousel|album|photos|pics"),
     ("Trip", "trip|road trip|let'?s go"),
 )
 
@@ -513,6 +525,40 @@ async def search_work(agent_name: str, text: str) -> str | ChatMessage:
     return with_card(result["reply"], CarouselCardPayload(title=title, items=items))
 
 
+async def curator_work(text: str) -> str | ChatMessage:
+    payload = await trip()
+    post_ = await post("/api/curate", {"tripId": payload["tripId"], "text": text}, timeout=90)
+    photos = post_.get("photos") or []
+    caption, tags = str(post_.get("caption") or ""), " ".join(post_.get("hashtags") or [])
+    theme = str(post_.get("theme") or "trip")
+    children: list[dict] = []
+    if photos:
+        children.append({"type": "image", "src": photos[0]["url"], "alt": f"Cover photo, {theme}", "aspect_ratio": "4:3"})
+    rest = [photo["url"] for photo in photos[1:]]
+    for start in range(0, len(rest), 3):
+        children.append({
+            "type": "group", "direction": "row", "gap": 6,
+            "children": [{"type": "image", "src": url, "alt": "Trip photo", "aspect_ratio": "1:1"} for url in rest[start:start + 3]],
+        })
+    children += [
+        {"type": "text", "value": caption[:400], "style": "emphasis"},
+        {"type": "text", "value": tags[:200], "style": "muted"},
+        {"type": "group", "direction": "row", "gap": 6, "children": [
+            {"type": "badge", "label": theme, "variant": "success"},
+            {"type": "badge", "label": f"{len(photos)} of {post_.get('total', len(photos))} photos", "variant": "info"},
+        ]},
+        {"type": "text", "value": f"Palette {'  '.join(post_.get('palette') or [])}  ·  {post_.get('source', '')}"[:200], "style": "muted"},
+        {"type": "button", "label": "Another set", "action": {"selection": {"action": "ask", "text": "curate another post"}}},
+    ]
+    card = CustomCardPayload.model_validate({
+        "root": {"type": "section", "title": f"Your post · {theme}",
+                 "subtitle": "The photos that look best together, with a caption", "children": children}
+    })
+    links = "\n".join(photo["url"] for photo in photos)
+    article = "an" if theme[:1].lower() in "aeiou" else "a"
+    return with_card(f"Here's your post: {len(photos)} photos with {article} {theme} look.\n{caption}\n{tags}\n{links}", card)
+
+
 # Specialists whose results come back as a carousel: card title, button label, and what a tap sends.
 CARDS = {
     "Personal Chef": ("Places to eat", "See menu", lambda name: {"action": "menu", "place": name}),
@@ -714,6 +760,7 @@ attach(ledger, ledger_work)
 attach(stays, lambda text: search_work("Stays", text))
 attach(guide, lambda text: search_work("Guide", text))
 attach(planner, planner_work)
+attach(curator, curator_work)
 
 cashier_chat = Protocol(spec=chat_protocol_spec)
 
@@ -817,6 +864,7 @@ SKILLS = (
     "- plan the days with a day-by-day itinerary (Itinerary)\n"
     "- find places to stay, and everyone votes (StayScout)\n"
     "- find things to do, and everyone votes (Local Guide)\n"
+    "- turn the photos you share here into a post with a caption (Curator)\n"
     "- find breakfast on the way (BiteScout)\n"
     "- find gas when you're low (FuelFox)\n"
     "- find urgent care if someone feels unwell (CareRoute)\n"
@@ -938,7 +986,7 @@ def trip_welcome(trip: dict) -> str:
         f"{hello} I'll be your complete travel concierge{route}, before the trip and while your hands are on "
         f"the wheel. Mention me any time and I'll:\n{SKILLS}\n"
         "Everyone in this chat can vote on stays and things to do, and I keep the tally.\n"
-        "Try: where should we stay? or plan our days" + board_line()
+        "Share photos with me along the way. Try: where should we stay? or plan our days" + board_line()
     )
 
 
@@ -1043,6 +1091,53 @@ async def cast_vote(user: str, kind: str, option: str) -> str:
     return (
         f"Vote counted for {option}.{moved}\nGroup tally for {what}: {tally}.\n"
         "Everyone in the chat can tap Vote on the card. Say \"plan our days\" and the plan uses the winners."
+    )
+
+
+STORAGE = ExternalStorage(identity=captain._identity, storage_url=AgentverseConfig().storage_api)
+
+
+async def photo_bytes(item: ResourceContent) -> str:
+    """The photo as base64. ASI:One keeps shared files in Agentverse storage, read with Yatra's own identity."""
+    resources = item.resource if isinstance(item.resource, list) else [item.resource]
+    try:
+        data = await asyncio.to_thread(STORAGE.download, str(item.resource_id))
+        if data.get("contents"):
+            return data["contents"]
+    except Exception:
+        pass
+    uri = resources[0].uri if resources else ""
+    if uri.startswith(("https://", "http://")):
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
+            response = await client.get(uri, headers={"user-agent": "Detour/1.0 (https://github.com/aj1575/detour)"})
+            response.raise_for_status()
+            return base64.b64encode(response.content).decode()
+    raise RuntimeError("the photo could not be downloaded")
+
+
+async def save_photos(ctx: Context, sender: str, items: list[ResourceContent]) -> str:
+    await load_trip(sender)
+    trip_id = chats.get(sender, "")
+    saved, total, themes, failed = 0, 0, [], 0
+    for item in items:
+        try:
+            body = {"data": await photo_bytes(item), "sharedBy": "Group chat"}
+            if trip_id and not trip_id.startswith("local-"):
+                body["tripId"] = trip_id
+            result = await post("/api/photos", body, timeout=60)
+            saved, total = saved + 1, int(result.get("count") or total)
+            themes.append(str((result.get("look") or {}).get("theme") or ""))
+        except Exception as error:
+            failed += 1
+            ctx.logger.warning("Photo was not saved: %s", error)
+    if not saved:
+        return "I couldn't save that photo. Try sending it again."
+    article = "an" if themes and themes[-1][:1] in "aeiou" else "a"
+    look = f" It has {article} {themes[-1]} look." if len(themes) == 1 and themes[0] else ""
+    missed = f" {failed} didn't upload." if failed else ""
+    return (
+        f"Added {saved} photo{'s' if saved != 1 else ''} to the trip album ({total} so far).{look}{missed} "
+        "Keep sharing, and say \"curate a post\" when you want the best set and a caption."
     )
 
 
@@ -1169,6 +1264,10 @@ async def captain_chat(ctx: Context, sender: str, msg: ChatMessage):
     if vote := vote_in(msg):
         await ctx.send(sender, outbound(await cast_vote(sender, *vote), end=False))
         return
+    if photos := [item for item in msg.content if isinstance(item, ResourceContent)]:
+        await ctx.send(sender, outbound(await save_photos(ctx, sender, photos), end=False))
+        if not clean(msg.text()):
+            return
     if any(selection_of(item).get("action") == "start_trip" for item in msg.content):
         trip = {"stage": "details"}
         await save_trip(ctx, sender, trip, fresh=True)
@@ -1222,7 +1321,7 @@ async def captain_ack(ctx: Context, sender: str, msg: ChatAcknowledgement):
 
 captain.include(captain_protocol, publish_manifest=True)
 
-AGENTS = (captain, droid, chef, pit, lifeline, waiter, cashier, ledger, stays, guide, planner)
+AGENTS = (captain, droid, chef, pit, lifeline, waiter, cashier, ledger, stays, guide, planner, curator)
 
 
 def inspector(agent: Agent) -> str:

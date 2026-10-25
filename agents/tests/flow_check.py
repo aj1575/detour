@@ -15,6 +15,7 @@ import asyncio
 import json
 import sys
 import time
+from uuid import uuid4
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -25,6 +26,8 @@ from uagents_core.contrib.protocols.chat import (  # noqa: E402
     ChatAcknowledgement,
     ChatMessage,
     MetadataContent,
+    Resource,
+    ResourceContent,
     TextContent,
     chat_protocol_spec,
 )
@@ -52,6 +55,18 @@ def tester(name: str, port: int) -> Agent:
     inbox[name] = asyncio.Queue()
     return agent
 
+
+WIKI = "https://upload.wikimedia.org/wikipedia/commons/"
+THUMB = "https://thumb.wikimedia.org/wikipedia/commons/thumb/"
+PHOTOS = [
+    WIKI + "4/47/Big_Sur_Sunset_-_Along_1st_Highway_-_CA.jpg",
+    THUMB + "9/93/Pfeiffer_Beach_at_Dusk_%28Unsplash%29.jpg/1280px-Pfeiffer_Beach_at_Dusk_%28Unsplash%29.jpg",
+    THUMB + "a/a4/Pfeiffer_State_Beach_Sunset.JPG/1280px-Pfeiffer_State_Beach_Sunset.JPG",
+    THUMB + "6/68/McWay_Falls_Big_Sur_May_2011_001.jpg/1280px-McWay_Falls_Big_Sur_May_2011_001.jpg",
+    THUMB + "8/89/McWay_cove_1.jpg/1280px-McWay_cove_1.jpg",
+    WIKI + "c/ca/Big_sur_ocean_coastlines.jpg",
+    THUMB + "6/6a/Ewoldsen_Trail%2C_Big_Sur%2C_California_-_panoramio.jpg/1280px-Ewoldsen_Trail%2C_Big_Sur%2C_California_-_panoramio.jpg",
+]
 
 lead = tester("lead", 8021)
 friend = tester("friend", 8022)
@@ -82,12 +97,20 @@ def card_line(card: dict) -> str:
 
 
 async def say(who: Agent, text: str | None = None, selection: dict | None = None, wait: float = 60,
-              expect: str = "", replies: int = 1) -> list[tuple[str, dict | None]]:
+              expect: str = "", replies: int = 1, photos: list[str] | None = None) -> list[tuple[str, dict | None]]:
     queue = inbox[who.name]
     while not queue.empty():
         queue.get_nowait()
-    content = [TextContent(text=text)] if text is not None else [create_card_response_content(selection=selection)]
-    label = text if text is not None else f"<tap {selection}>"
+    if photos:
+        # How ASI:One sends a shared photo: a resource the agent downloads.
+        content = [
+            ResourceContent(resource_id=uuid4(), resource=Resource(uri=url, metadata={"mime_type": "image/jpeg", "role": "image"}))
+            for url in photos
+        ]
+        label = f"<shares {len(photos)} photos>"
+    else:
+        content = [TextContent(text=text)] if text is not None else [create_card_response_content(selection=selection)]
+        label = text if text is not None else f"<tap {selection}>"
     print(f"\n>>> {who.name}: {label}", flush=True)
     started = time.time()
     await lead_ctx[who.name].send(crew.captain.address, ChatMessage(content=content))
@@ -168,6 +191,12 @@ async def script():
         await say(friend, selection=pick, expect="changed your vote")
     await say(friend, "what fun things can we do there?", wait=90, expect="Vote for this")
     await say(lead, "plan our days", wait=150, expect="Your trip plan")
+
+    # Friends share photos through the trip, then the Curator turns them into a post.
+    await say(friend, photos=PHOTOS[:4], wait=120, expect="trip album")
+    await say(lead, photos=PHOTOS[4:], wait=120, expect="trip album")
+    await say(lead, "curate a post for instagram from our pics", wait=120, expect="Your post")
+    await say(lead, selection={"action": "ask", "text": "curate another post"}, wait=120, expect="Your post")
 
     # On the road.
     food = await say(lead, "I'm starving, breakfast?", wait=90, expect="See menu")

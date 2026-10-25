@@ -9,3 +9,4 @@ Ledger agent1q204lpkkqnr896m8qc2tssasxmsfjgmju84ynlcj5gshzc44chezssn6gpy https:/
 StayScout agent1q2qzfn40z7g4k22pg38q7ap4407xuvfhpat4jcn20x4lxl6ky9m9uf0pref https://agentverse.ai/inspect/?uri=http%3A%2F%2F127.0.0.1%3A8011&address=agent1q2qzfn40z7g4k22pg38q7ap4407xuvfhpat4jcn20x4lxl6ky9m9uf0pref
 Local Guide agent1qfus9aqzdmgy50rgvcuf0tq56qq0xm0gsg66hgmk54z20vkwrrvuknggchw https://agentverse.ai/inspect/?uri=http%3A%2F%2F127.0.0.1%3A8012&address=agent1qfus9aqzdmgy50rgvcuf0tq56qq0xm0gsg66hgmk54z20vkwrrvuknggchw
 Itinerary agent1qfs44alz3vhg4s2npexnychrq3nyyeyxvqektj97spqlnx3sg5rj2mjxmhz https://agentverse.ai/inspect/?uri=http%3A%2F%2F127.0.0.1%3A8013&address=agent1qfs44alz3vhg4s2npexnychrq3nyyeyxvqektj97spqlnx3sg5rj2mjxmhz
+Curator agent1qgyzvjh6xxq9ejgsjk9x20fqvjxuqljlxq5cs6f5jpqhf9vxxzntz693x8a https://agentverse.ai/inspect/?uri=http%3A%2F%2F127.0.0.1%3A8014&address=agent1qgyzvjh6xxq9ejgsjk9x20fqvjxuqljlxq5cs6f5jpqhf9vxxzntz693x8a

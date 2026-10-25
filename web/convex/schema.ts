@@ -64,6 +64,38 @@ export default defineSchema({
   })
     .index("by_trip", ["tripId", "kind"])
     .index("by_voter", ["tripId", "kind", "voter"]),
+  // Photos the group shares during the trip, kept in Convex file storage with their look measured.
+  photos: defineTable({
+    tripId: v.id("trips"),
+    storageId: v.id("_storage"),
+    sharedBy: v.string(),
+    width: v.number(),
+    height: v.number(),
+    look: v.object({
+      hue: v.number(),
+      saturation: v.number(),
+      brightness: v.number(),
+      warmth: v.number(),
+      contrast: v.number(),
+      sharpness: v.number(),
+      colorfulness: v.number(),
+      hues: v.array(v.number()),
+      palette: v.array(v.string()),
+      theme: v.string(),
+      score: v.number(),
+    }),
+    createdAt: v.number(),
+  }).index("by_trip", ["tripId", "createdAt"]),
+  // Sets of photos the Curator picked, with the caption Droid wrote.
+  posts: defineTable({
+    tripId: v.id("trips"),
+    photoIds: v.array(v.id("photos")),
+    theme: v.string(),
+    caption: v.string(),
+    hashtags: v.array(v.string()),
+    source: v.string(),
+    createdAt: v.number(),
+  }).index("by_trip", ["tripId", "createdAt"]),
   // Each agent's ID card, written by the agent itself on startup.
   agents: defineTable({
     name: v.string(),

@@ -75,6 +75,10 @@ export async function POST(request: Request) {
       await call("/api/itinerary", { tripId, text });
       return Response.json({ ok: true, agent: plan.agent });
     }
+    if (plan.agent === "Curator") {
+      await call("/api/curate", { tripId, text });
+      return Response.json({ ok: true, agent: plan.agent });
+    }
     const hint =
       plan.agent === "none"
         ? "Ask for a place to stay, things to do, a day-by-day plan, food, gas, or urgent care."

@@ -5,7 +5,7 @@
 
 Detour is a group travel concierge that lives in an ASI:One group chat. Friends plan the trip together: where to go, when, who's coming, where to stay, and what to do. Everyone votes on stays and activities, and Detour turns the winners into a day-by-day itinerary. On the road it handles breakfast, gas, urgent care, the group's food order, a Stripe test payment, and the Splitwise split. The driver keeps their hands on the wheel.
 
-Built for Cal Hacks 13.0 by **Y**uktaa and **A**nurag. The agent you talk to is **Yatra**, from our initials and the Hindi and Sanskrit word for "journey". Eleven agents use the Agent Chat Protocol, register on Agentverse with mailboxes, and are called from ASI:One. Convex is the shared live memory, and a live trip board shows everyone the same trip in real time.
+Built for Cal Hacks 13.0 by **Y**uktaa and **A**nurag. The agent you talk to is **Yatra**, from our initials and the Hindi and Sanskrit word for "journey". Twelve agents use the Agent Chat Protocol, register on Agentverse with mailboxes, and are called from ASI:One. Convex is the shared live memory, and a live trip board shows everyone the same trip in real time.
 
 ## Call the agents
 
@@ -28,6 +28,8 @@ The demo, in order:
 | `pay`, then **Approve** | PayPilot runs a Stripe test payment, and Ledger splits it in Splitwise |
 | `the tank is almost empty` | FuelFox |
 | `I feel dizzy` | CareRoute, always starting with the 911 line |
+| Share photos with `@yatra` along the way | Yatra adds them to the trip album, stored in Convex |
+| `curate a post` | Curator picks the photos that look best together and writes a caption. **Another set** gives a different post |
 | `verify agents` | Yatra checks every agent's signed actions and shows their ID cards |
 
 Yatra is the one agent you talk to, and it stays in charge. Each request goes to Relay, where Factory Droid judges it with structured output: one label from a fixed list, any place the person names, and a short reason. Only two kinds of message skip Droid: obvious medical messages, so they are never delayed, and the fixed commands that card buttons send. Yatra then calls that specialist, and the reply comes back in the same chat.
@@ -43,6 +45,7 @@ Open http://localhost:3000 to watch the **live trip board**. Its message box and
 | [StayScout](https://agentverse.ai/agents/details/agent1q2qzfn40z7g4k22pg38q7ap4407xuvfhpat4jcn20x4lxl6ky9m9uf0pref/profile) | `@detour-stays` | Places to stay, voting card | `agent1q2qzfn40z7g4k22pg38q7ap4407xuvfhpat4jcn20x4lxl6ky9m9uf0pref` |
 | [Local Guide](https://agentverse.ai/agents/details/agent1qfus9aqzdmgy50rgvcuf0tq56qq0xm0gsg66hgmk54z20vkwrrvuknggchw/profile) | `@detour-guide` | Things to do, voting card | `agent1qfus9aqzdmgy50rgvcuf0tq56qq0xm0gsg66hgmk54z20vkwrrvuknggchw` |
 | [Itinerary](https://agentverse.ai/agents/details/agent1qfs44alz3vhg4s2npexnychrq3nyyeyxvqektj97spqlnx3sg5rj2mjxmhz/profile) | `@detour-planner` | Day-by-day plan with Droid | `agent1qfs44alz3vhg4s2npexnychrq3nyyeyxvqektj97spqlnx3sg5rj2mjxmhz` |
+| [Curator](https://agentverse.ai/agents/details/agent1qgyzvjh6xxq9ejgsjk9x20fqvjxuqljlxq5cs6f5jpqhf9vxxzntz693x8a/profile) | `@detour-curator` | Photo post and caption | `agent1qgyzvjh6xxq9ejgsjk9x20fqvjxuqljlxq5cs6f5jpqhf9vxxzntz693x8a` |
 | [BiteScout](https://agentverse.ai/agents/details/agent1qwfx0n64pf2xqqm9ttdevyyqtnnug6ggz7kee52gyjurwysgklvh6dh3n9x/profile) | `@food-agent` | Breakfast | `agent1qwfx0n64pf2xqqm9ttdevyyqtnnug6ggz7kee52gyjurwysgklvh6dh3n9x` |
 | [FuelFox](https://agentverse.ai/agents/details/agent1qdtmn2vscx5ueajpx47gsg2nhp2pe54px2564r64e0w4n8mttuyn5mt8fup/profile) | `@fuel-stop-agent` | Gas | `agent1qdtmn2vscx5ueajpx47gsg2nhp2pe54px2564r64e0w4n8mttuyn5mt8fup` |
 | [CareRoute](https://agentverse.ai/agents/details/agent1qdnp5dyudvdkrwqdflam38farm7c6kn6ktjfelfqvlfd3r8sevhayx7cklf/profile) | `@urgent-care-agent` | Urgent care | `agent1qdnp5dyudvdkrwqdflam38farm7c6kn6ktjfelfqvlfd3r8sevhayx7cklf` |
@@ -54,7 +57,7 @@ Each agent's Agentverse profile lives in the repo: the description and starter p
 
 ## How it uses each sponsor
 
-**Fetch.ai.** Eleven uAgents with the Agent Chat Protocol and mailboxes on Agentverse. The whole flow runs inside one ASI:One conversation. That includes group chats: each friend who messages Yatra joins the same trip. It uses Interactive Cards (a custom boarding pass card, voting carousels, a custom itinerary card, a menu carousel, and a payment review card) and the Fetch Payment Protocol, verified against Stripe before it completes.
+**Fetch.ai.** Twelve uAgents with the Agent Chat Protocol and mailboxes on Agentverse. The whole flow runs inside one ASI:One conversation. That includes group chats: each friend who messages Yatra joins the same trip. It uses Interactive Cards (a custom boarding pass card, voting carousels, a custom itinerary card, a menu carousel, and a payment review card) and the Fetch Payment Protocol, verified against Stripe before it completes.
 
 **Convex.** Convex is the agents' shared memory and the board's live backend:
 - Yatra's trip state (stage, route, dates, people, chat members) is stored in Convex. A restart of the agents loses nothing, and every friend in the group chat resolves to the same trip (`convex/trips.ts`).
@@ -62,17 +65,18 @@ Each agent's Agentverse profile lives in the repo: the description and starter p
 - The board uses `useQuery` subscriptions for the trip, itinerary, messages, orders, votes, and agent log. There is no polling.
 - The **Presence component** (`@convex-dev/presence`) shows who has the board open right now.
 - A **cron** forgets shared locations after six hours (`convex/crons.ts`).
+- **File storage** holds the trip album. Each photo is resized and measured on upload, and its public Convex URL is what the Curator's card shows in ASI:One (`convex/photos.ts`).
 
 **Agent ID cards and a signed action log.**
 - On startup, each agent publishes an ID card to Convex: name, handle, Fetch address, role, and protocols.
 - Every action an agent takes gets an idempotency key and is signed with the agent's own key (`sign_action` in `agents/crew.py`).
 - If the same message arrives twice, or someone double-taps a card button such as a vote or Approve, it runs once. The Captain says the tap was already handled, and the board counts the repeats it blocked.
 - Say `verify agents` in ASI:One. The Captain re-checks every recent signature against each agent's address and replies with an ID-card card. Changing a row in Convex after it was signed makes that action fail the check.
-- The board shows all eleven ID cards and the signed action log live.
+- The board shows all twelve ID cards and the signed action log live.
 
-**Factory Droid.** The Droid SDK does two jobs with structured output (`web/lib/droid.ts`, `web/lib/itinerary.ts`). It routes every unclear message to one of ten intents, and it writes the day-by-day itinerary as typed JSON, using only real places from Google Places and the group's votes.
+**Factory Droid.** The Droid SDK does three jobs with structured output (`web/lib/droid.ts`, `web/lib/itinerary.ts`). It routes every unclear message to one of ten intents, it writes the day-by-day itinerary as typed JSON, using only real places from Google Places and the group's votes, and it writes the caption and hashtags for the Curator's photo posts.
 
-**Bringing people closer together.** Planning a trip with friends usually means a messy group chat and one person doing all the work. In Detour the whole group plans in one chat: anyone can ask, everyone votes, the tally is shared, and the plan reflects the group's choices. The board shows who is there with you.
+**Bringing people closer together.** The trip album turns everyone's photos into one shared story: the Curator picks the set that looks best together (same color mood, sharp, well exposed) and captions it for the group. Planning a trip with friends usually means a messy group chat and one person doing all the work. In Detour the whole group plans in one chat: anyone can ask, everyone votes, the tally is shared, and the plan reflects the group's choices. The board shows who is there with you.
 
 **Microsoft: built for the real world.** We address each of the five capabilities Microsoft asked for:
 1. **Customer understanding.** The customer is a group of friends planning a trip, with one driver who can't look at a phone. Today they plan in a messy group chat where one person does all the work. Detour keeps planning in that chat, lets everyone take part by voting, and keeps the driver hands-free with voice replies and a 911-first medical path.
