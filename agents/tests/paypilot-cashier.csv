@@ -1,0 +1,11 @@
+Question,Expected answer
+"pay","Either: The sample order at a place is a dollar total, with an Approve card that opens a Stripe test checkout. Or, if nothing is ordered yet: Add at least one item before paying. Or: Open a menu before paying."
+"checkout please","Same as pay: an approval card with the place and total, or a message asking to open a menu or add an item first."
+"ready to pay","Same as pay: an approval card with the place and total, or a message asking to open a menu or add an item first."
+"let's pay for breakfast","Same as pay: an approval card with the place and total, or a message asking to open a menu or add an item first."
+"can we check out now?","Same as pay: an approval card with the place and total, or a message asking to open a menu or add an item first."
+"take payment for the table","Same as pay: an approval card with the place and total, or a message asking to open a menu or add an item first."
+"charge us for the order","Same as pay: an approval card with the place and total, or a message asking to open a menu or add an item first."
+"what's the total?","Same as pay: an approval card with the place and total, or a message asking to open a menu or add an item first."
+"settle the bill","Same as pay: an approval card with the place and total, or a message asking to open a menu or add an item first."
+"how much do we owe?","Same as pay: an approval card with the place and total, or a message asking to open a menu or add an item first."

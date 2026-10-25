@@ -1,0 +1,11 @@
+Question,Expected answer
+"menu at Johnny's","Sample menu for the demo. The restaurant did not send this. Johnny's. Dishes: House breakfast plate $16.00, Veggie scramble $15.00, Oatmeal and fruit $11.00, Coffee and pastry $8.00."
+"show me the menu at Sam's Chowder House","Sample menu for the demo. The restaurant did not send this. Sam's Chowder House, with the same four dishes and prices."
+"menu at Pilot Light","Sample menu for the demo. The restaurant did not send this. Pilot Light, with the same four dishes and prices."
+"can I see the menu at Cafe Classique","Sample menu for the demo. The restaurant did not send this. Cafe Classique, with the same four dishes and prices."
+"order Coffee and pastry for Alex at Johnny's","Added Coffee and pastry for Alex at Johnny's. Say pay when the table is ready. If the Johnny's menu was not opened first: Open the menu before adding an item."
+"order Veggie scramble for Jordan at Johnny's","Added Veggie scramble for Jordan at Johnny's. Say pay when the table is ready. If the Johnny's menu was not opened first: Open the menu before adding an item."
+"order House breakfast plate for Alex at Pilot Light","Added House breakfast plate for Alex at Pilot Light. Say pay when the table is ready. If the Pilot Light menu was not opened first: Open the menu before adding an item."
+"order Oatmeal and fruit for Jordan at Sam's Chowder House","Added Oatmeal and fruit for Jordan at Sam's Chowder House. Say pay when the table is ready. If that menu was not opened first: Open the menu before adding an item."
+"order Pizza for Alex at Johnny's","That item is not on the sample menu. If the Johnny's menu was not opened first: Open the menu before adding an item."
+"order Coffee and pastry for Sam at Johnny's","Choose Alex or Jordan and a menu item."

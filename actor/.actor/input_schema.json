@@ -1,0 +1,20 @@
+{
+  "title": "Route Buzz Finder input",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "query": {
+      "title": "Search",
+      "type": "string",
+      "description": "Maps search, including the town on the route.",
+      "editor": "textfield"
+    },
+    "category": {
+      "title": "Category",
+      "type": "string",
+      "description": "breakfast, gas, or care.",
+      "editor": "textfield"
+    }
+  },
+  "required": ["query"]
+}

@@ -1,0 +1,8 @@
+Atlas agent1qvh68avajf0d6sz4ljuukz7umptsefk7dj4lhpqpvm4zx88z272h6aqp3cc https://agentverse.ai/inspect/?uri=http%3A%2F%2F127.0.0.1%3A8001&address=agent1qvh68avajf0d6sz4ljuukz7umptsefk7dj4lhpqpvm4zx88z272h6aqp3cc
+Relay agent1qte8wqjqant2k8u8k57k0nmsx9qjtp9f3la2y3y5nxs5cqg0qqafvlqh7wm https://agentverse.ai/inspect/?uri=http%3A%2F%2F127.0.0.1%3A8002&address=agent1qte8wqjqant2k8u8k57k0nmsx9qjtp9f3la2y3y5nxs5cqg0qqafvlqh7wm
+BiteScout agent1qwfx0n64pf2xqqm9ttdevyyqtnnug6ggz7kee52gyjurwysgklvh6dh3n9x https://agentverse.ai/inspect/?uri=http%3A%2F%2F127.0.0.1%3A8003&address=agent1qwfx0n64pf2xqqm9ttdevyyqtnnug6ggz7kee52gyjurwysgklvh6dh3n9x
+FuelFox agent1qdtmn2vscx5ueajpx47gsg2nhp2pe54px2564r64e0w4n8mttuyn5mt8fup https://agentverse.ai/inspect/?uri=http%3A%2F%2F127.0.0.1%3A8004&address=agent1qdtmn2vscx5ueajpx47gsg2nhp2pe54px2564r64e0w4n8mttuyn5mt8fup
+CareRoute agent1qdnp5dyudvdkrwqdflam38farm7c6kn6ktjfelfqvlfd3r8sevhayx7cklf https://agentverse.ai/inspect/?uri=http%3A%2F%2F127.0.0.1%3A8005&address=agent1qdnp5dyudvdkrwqdflam38farm7c6kn6ktjfelfqvlfd3r8sevhayx7cklf
+MenuScout agent1qfapfp27kvvwdw0l4tqh800eyfl2kda5ehrmzehjm35f3gr6vx00vm405j9 https://agentverse.ai/inspect/?uri=http%3A%2F%2F127.0.0.1%3A8006&address=agent1qfapfp27kvvwdw0l4tqh800eyfl2kda5ehrmzehjm35f3gr6vx00vm405j9
+PayPilot agent1q0962tw9y90a8qr7th2zljmch7hn8edxj7ckxqnl6m7cyn9zmlygwz6v7ym https://agentverse.ai/inspect/?uri=http%3A%2F%2F127.0.0.1%3A8007&address=agent1q0962tw9y90a8qr7th2zljmch7hn8edxj7ckxqnl6m7cyn9zmlygwz6v7ym
+Ledger agent1q204lpkkqnr896m8qc2tssasxmsfjgmju84ynlcj5gshzc44chezssn6gpy https://agentverse.ai/inspect/?uri=http%3A%2F%2F127.0.0.1%3A8008&address=agent1q204lpkkqnr896m8qc2tssasxmsfjgmju84ynlcj5gshzc44chezssn6gpy

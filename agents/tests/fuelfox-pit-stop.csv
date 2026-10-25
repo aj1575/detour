@@ -1,0 +1,11 @@
+Question,Expected answer
+"We're low on gas","Lists up to five gas stations near Half Moon Bay, CA with ratings. The exact stations can vary."
+"where can I get fuel?","Lists gas stations near Half Moon Bay, CA."
+"need to fill up the tank","Lists gas stations near Half Moon Bay, CA."
+"gas station nearby?","Lists gas stations near Half Moon Bay, CA."
+"find me a gas station","Lists gas stations near Half Moon Bay, CA."
+"the tank is almost empty","Lists gas stations near Half Moon Bay, CA."
+"we're running on fumes","Lists gas stations near Half Moon Bay, CA."
+"the fuel light just came on","Lists gas stations near Half Moon Bay, CA."
+"where's the closest fuel stop?","Lists gas stations near Half Moon Bay, CA."
+"we need to refuel before Big Sur","Lists gas stations near Half Moon Bay, CA."

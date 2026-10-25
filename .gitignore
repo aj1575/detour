@@ -1,0 +1,8 @@
+.venv/
+.env
+.env.local
+web/.env
+web/.env.local
+web/.convex/
+__pycache__/
+*.pyc

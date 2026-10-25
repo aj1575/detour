@@ -1,0 +1,11 @@
+Question,Expected answer
+"split the bill","Either the latest Splitwise expense for the trip, with an expense number and group number, or: No Splitwise expense has been recorded for this trip yet."
+"who owes what?","Either the latest Splitwise expense for the trip, or: No Splitwise expense has been recorded for this trip yet."
+"show the split","Either the latest Splitwise expense for the trip, or: No Splitwise expense has been recorded for this trip yet."
+"split","Either the latest Splitwise expense for the trip, or: No Splitwise expense has been recorded for this trip yet."
+"how much does Jordan owe Alex?","Either the latest Splitwise expense for the trip, or: No Splitwise expense has been recorded for this trip yet."
+"what did we each pay?","Either the latest Splitwise expense for the trip, or: No Splitwise expense has been recorded for this trip yet."
+"show me Splitwise","Either the latest Splitwise expense for the trip, or: No Splitwise expense has been recorded for this trip yet."
+"is the expense recorded?","Either the latest Splitwise expense for the trip, or: No Splitwise expense has been recorded for this trip yet."
+"did the payment go to Splitwise?","Either the latest Splitwise expense for the trip, or: No Splitwise expense has been recorded for this trip yet."
+"latest expense","Either the latest Splitwise expense for the trip, or: No Splitwise expense has been recorded for this trip yet."

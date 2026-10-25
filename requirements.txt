@@ -1,0 +1,7 @@
+# Install only after activating .venv:
+#   .\.venv\Scripts\Activate.ps1
+#   python -m pip install -r requirements.txt
+
+uagents==0.25.5
+python-dotenv==1.1.1
+httpx==0.28.1
