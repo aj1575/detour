@@ -1,4 +1,4 @@
-"""All Detour agents that register on Agentverse."""
+"""All Travel Assist AI agents that register on Agentverse."""
 
 import asyncio
 import base64
@@ -68,13 +68,13 @@ AGENTVERSE_KEY = os.getenv("AGENTVERSE_API_KEY", "").strip()
 ROSTER = (
     (
         "Atlas", "atlas-guide", "trip-captain", 8001,
-        "Atlas, Detour's group travel captain. Plan a trip with friends, vote on stays and things to do, and "
+        "Atlas, Travel Assist AI's group travel captain. Plan a trip with friends, vote on stays and things to do, and "
         "get help on the road: breakfast, gas, urgent care, a menu, payment, or the bill split.",
         ["Let's plan a trip", "Let's go on a road trip", "I'm starving, breakfast?", "We're low on gas"],
     ),
     (
         "Relay", "routing-agent", "droid", 8002,
-        "Detour router. Reads one road-trip message and names the one specialist that should handle it.",
+        "Travel Assist AI router. Reads one road-trip message and names the one specialist that should handle it.",
         ["I need gas", "menu at Johnny's", "split the bill"],
     ),
     (
@@ -348,9 +348,9 @@ async def send_once(method: str, path: str, body: dict | None, timeout: float) -
                 return await client.request(method, f"{APP}{path}", json=body)
         except (httpx.ConnectError, httpx.RemoteProtocolError) as error:
             if attempt:
-                raise Unreachable(f"The Detour app at {APP} is not reachable.") from error
+                raise Unreachable(f"The Travel Assist AI app at {APP} is not reachable.") from error
             await asyncio.sleep(1.5)
-    raise Unreachable(f"The Detour app at {APP} is not reachable.")
+    raise Unreachable(f"The Travel Assist AI app at {APP} is not reachable.")
 
 
 async def post(path: str, body: dict, timeout: float = 75) -> dict:
@@ -372,7 +372,7 @@ async def trip() -> dict:
 
 def friendly(name: str, error: Exception) -> str:
     if isinstance(error, Unreachable):
-        return f"{name} can't reach the Detour service right now. Try again in a minute."
+        return f"{name} can't reach the Travel Assist AI service right now. Try again in a minute."
     if isinstance(error, httpx.TimeoutException):
         return f"{name} took too long to answer. Try again in a moment."
     return f"{name} couldn't finish that: {str(error)[:300]}"
@@ -1235,7 +1235,7 @@ async def photo_bytes(item: ResourceContent) -> str:
     uri = resources[0].uri if resources else ""
     if uri.startswith(("https://", "http://")):
         async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
-            response = await client.get(uri, headers={"user-agent": "Detour/1.0 (https://github.com/aj1575/detour)"})
+            response = await client.get(uri, headers={"user-agent": "TravelAssistAI/1.0 (https://github.com/aj1575/detour)"})
             response.raise_for_status()
             return base64.b64encode(response.content).decode()
     raise RuntimeError("the photo could not be downloaded")
@@ -1397,7 +1397,7 @@ async def captain_chat(ctx: Context, sender: str, msg: ChatMessage):
         if key.startswith("tap:") and seen_id != str(msg.msg_id) and time.monotonic() - seen_at > 1:
             await ctx.send(sender, outbound(
                 "That tap was already handled, so I didn't run it twice. Every action is recorded once on "
-                "Detour's signed ledger. Say \"verify agents\" to see it.", end=False))
+                "Travel Assist AI's signed ledger. Say \"verify agents\" to see it.", end=False))
         return
     first_taps[key] = (str(msg.msg_id), time.monotonic())
     await sign_action(captain, key, "tap" if key.startswith("tap:") else "message", said, "accepted")

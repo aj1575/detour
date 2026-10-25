@@ -62,7 +62,7 @@ function lines(places: Array<{ name: string; detail?: string; rating?: string; v
 
 function prompt(facts: TripFacts, sights: Place[], food: Place[], request: string) {
   const who = facts.people.length ? `with ${facts.people.join(", ")}` : "";
-  return `You plan road trips for Detour. Build a realistic day-by-day itinerary. Do not use any tools.
+  return `You plan road trips for Travel Assist AI. Build a realistic day-by-day itinerary. Do not use any tools.
 
 Trip: ${facts.origin || "the Bay Area"} to ${facts.destination} ${who}.
 Dates: ${facts.dates || "not given; plan 2 days"}.

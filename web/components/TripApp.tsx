@@ -200,7 +200,7 @@ function Board({ trip, tripId, loading }: { trip: Doc<"trips"> | null; tripId: I
       </p>
       <header className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--line)] px-5 py-4">
         <div className="min-w-0">
-          <p className="text-sm font-semibold tracking-[0.2em] text-[var(--teal)]">DETOUR · LIVE TRIP BOARD</p>
+          <p className="text-sm font-semibold tracking-[0.2em] text-[var(--teal)]">TRAVEL ASSIST AI · LIVE TRIP BOARD</p>
           <h1 className="text-3xl font-semibold">
             {trip ? trip.name || `${trip.origin} to ${trip.destination}` : "Loading the trip"}
           </h1>
@@ -536,7 +536,7 @@ function IdCards() {
             <div className="flex items-start gap-3">
               <Identicon seed={agent.address} />
               <div className="min-w-0">
-                <p className="text-xs font-semibold tracking-[0.2em] text-[var(--muted)]">DETOUR AGENT ID</p>
+                <p className="text-xs font-semibold tracking-[0.2em] text-[var(--muted)]">TRAVEL ASSIST AI AGENT ID</p>
                 <p className="text-lg font-semibold leading-tight">{agent.name}</p>
                 <p className="text-sm text-[var(--teal)]">@{agent.handle}</p>
               </div>

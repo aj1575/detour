@@ -43,7 +43,7 @@ export const ensureDemo = mutation({
     });
     await ctx.db.insert("messages", {
       tripId,
-      author: "Detour",
+      author: "Travel Assist AI",
       role: "system",
       body: "Trip board for Alex, the trip lead, and Jordan, the driver. Message Atlas in ASI:One and this page updates live.",
       createdAt: Date.now(),

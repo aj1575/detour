@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Detour",
+  title: "Travel Assist AI",
   description: "Local companion for a two-person road trip.",
 };
 

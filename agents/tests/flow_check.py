@@ -1,6 +1,6 @@
 """End-to-end check of the demo flow without ASI:One.
 
-Runs every Detour agent plus two tester agents (the trip lead and a friend) in one process.
+Runs every Travel Assist AI agent plus two tester agents (the trip lead and a friend) in one process.
 Testers talk to Atlas through uAgents' local dispatch, exactly as ASI:One would,
 and the script prints every reply, including card summaries.
 

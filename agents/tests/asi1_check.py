@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
-YATRA = "agent1qvh68avajf0d6sz4ljuukz7umptsefk7dj4lhpqpvm4zx88z272h6aqp3cc"
+ATLAS = "agent1qvh68avajf0d6sz4ljuukz7umptsefk7dj4lhpqpvm4zx88z272h6aqp3cc"
 PROMPTS = sys.argv[1:] or [
     "@atlas-guide Let's plan a trip: road trip from San Jose to Big Sur with Jordan and Priya",
     "@atlas-guide we're all in",
@@ -51,7 +51,7 @@ def agents_used(plan: dict) -> list[str]:
 
 
 def ask(client: httpx.Client, key: str, session: str, messages: list[dict]) -> tuple[str, dict]:
-    body = {"model": "asi1", "messages": messages, "planner_mode": True, "agents": [YATRA], "stream": True}
+    body = {"model": "asi1", "messages": messages, "planner_mode": True, "agents": [ATLAS], "stream": True}
     headers = {"Authorization": f"Bearer {key}", "x-session-id": session, "Content-Type": "application/json"}
     text, plan = [], {}
     with client.stream("POST", "https://api.asi1.ai/v1/chat/completions", json=body, headers=headers) as response:
@@ -86,7 +86,7 @@ def main():
             print(f"<<< ({time.time() - started:.0f}s, plan {plan.get('plan_status', '?')}) {reply[:1500]}", flush=True)
             used = agents_used(plan)
             print(f"    agents: {', '.join(used) or 'none reported'}"
-                  f"{'  (Atlas called)' if any(YATRA in a or 'Atlas' in a for a in used) else ''}", flush=True)
+                  f"{'  (Atlas called)' if any(ATLAS in a or 'Atlas' in a for a in used) else ''}", flush=True)
             messages.append({"role": "assistant", "content": reply})
 
 

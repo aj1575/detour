@@ -3,7 +3,7 @@
 
 # BiteScout
 
-Part of Detour, a Highway 1 road-trip concierge built for Cal Hacks 13.0.
+Part of Travel Assist AI, a Highway 1 road-trip concierge built for Cal Hacks 13.0.
 
 Ask for food and BiteScout returns up to five breakfast restaurants near Half Moon Bay, with ratings and review buzz. In ASI:One they appear as cards with a See menu button.
 

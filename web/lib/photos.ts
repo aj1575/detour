@@ -197,7 +197,7 @@ export type TripMood = { origin: string; destination: string; dates: string; peo
 // Droid writes the caption from the trip and the set's color story. It does not see the pixels.
 export async function writeCaption(trip: TripMood, theme: string, palette: string[], count: number, request: string) {
   const where = trip.destination || "the road";
-  const prompt = `You write social media captions for Detour, a group road-trip app. Do not use any tools.
+  const prompt = `You write social media captions for Travel Assist AI, a group road-trip app. Do not use any tools.
 Write one caption for a carousel of ${count} trip photos the group took.
 
 Trip: ${trip.origin ? `${trip.origin} to ` : ""}${where}${trip.dates ? `, ${trip.dates}` : ""}.
@@ -218,7 +218,7 @@ Rules:
   const tag = where.replace(/[^A-Za-z0-9]/g, "");
   return {
     caption: `${theme[0].toUpperCase()}${theme.slice(1)} on the way to ${where}. Same road, same crew, too many photos.`,
-    hashtags: [`#${tag || "RoadTrip"}`, "#RoadTrip", "#Detour", `#${theme.replace(/\s+/g, "")}`],
+    hashtags: [`#${tag || "RoadTrip"}`, "#RoadTrip", "#TravelAssistAI", `#${theme.replace(/\s+/g, "")}`],
     source: `Caption from a template. ${note}`,
   };
 }

@@ -5,7 +5,7 @@ Say "Let's plan a trip" and this agent answers with an "Explore the Area" custom
 back {"content_id", "category", "destination"} and the agent asks for travel dates.
 
 Run on its own:      .venv\\Scripts\\python.exe agents\\trip_agent.py
-Run inside Detour:   agents/crew.py imports trip_card_reply() so Atlas
+Run inside the crew:  agents/crew.py imports trip_card_reply() so Atlas
                      shows the same card without a second Agentverse agent.
 """
 
@@ -106,7 +106,7 @@ def destination_row(item: dict) -> dict:
 CARD_PAYLOAD = {
     "root": {
         "type": "section",
-        "title": "Detour · Plan a road trip together",
+        "title": "Travel Assist AI · Plan a road trip together",
         "subtitle": "Everyone in this chat plans, votes, and rides along. I keep it all in one place.",
         "children": [
             {"type": "image", "src": HERO_IMAGE, "alt": "A van on an open road", "aspect_ratio": "16:7"},

@@ -35,7 +35,7 @@ export async function createEmbeddedCheckout(cents: number, description: string,
     "line_items[0][price_data][currency]": "usd",
     "line_items[0][price_data][unit_amount]": String(cents),
     "line_items[0][price_data][product_data][name]": description.slice(0, 120),
-    "line_items[0][price_data][product_data][description]": "Detour sample order. This is a Stripe test checkout.",
+    "line_items[0][price_data][product_data][description]": "Travel Assist AI sample order. This is a Stripe test checkout.",
     return_url: "https://agentverse.ai/payment-success?session_id={CHECKOUT_SESSION_ID}",
     expires_at: String(expiresAt),
   });
@@ -130,13 +130,13 @@ export async function splitBill(
   if (!userId) throw new Error(splitError(me) || "Splitwise did not return the current user.");
 
   const groupBody: Record<string, string> = {
-    name: "Detour Highway 1",
+    name: "Travel Assist AI Highway 1",
     group_type: "trip",
   };
   if (friendEmail) {
     groupBody["users__0__email"] = friendEmail;
     groupBody["users__0__first_name"] = friendName;
-    groupBody["users__0__last_name"] = "Detour";
+    groupBody["users__0__last_name"] = "Friend";
   }
   const group = await splitwise(key, "create_group", groupBody);
   const groupId = group.group?.id;

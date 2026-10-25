@@ -3,7 +3,7 @@
 
 # MenuScout
 
-Part of Detour, a Highway 1 road-trip concierge built for Cal Hacks 13.0.
+Part of Travel Assist AI, a Highway 1 road-trip concierge built for Cal Hacks 13.0.
 
 MenuScout opens a menu card for a stop and adds dishes to the group order. The menu is a sample for the demo. The restaurant did not send it.
 

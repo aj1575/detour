@@ -3,7 +3,7 @@
 
 # PayPilot
 
-Part of Detour, a Highway 1 road-trip concierge built for Cal Hacks 13.0.
+Part of Travel Assist AI, a Highway 1 road-trip concierge built for Cal Hacks 13.0.
 
 PayPilot totals the group order and shows an approval card. After approval it sends a Fetch Payment Protocol request with a Stripe test checkout. It checks Stripe before confirming, and Ledger records the split.
 

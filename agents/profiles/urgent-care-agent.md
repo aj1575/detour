@@ -3,7 +3,7 @@
 
 # CareRoute
 
-Part of Detour, a Highway 1 road-trip concierge built for Cal Hacks 13.0.
+Part of Travel Assist AI, a Highway 1 road-trip concierge built for Cal Hacks 13.0.
 
 CareRoute returns urgent care clinics and hospitals near Half Moon Bay. Every answer starts with: If this is an emergency, call 911 now.
 

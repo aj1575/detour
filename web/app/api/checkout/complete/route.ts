@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   }
   const cents = orders.reduce((sum, order) => sum + Math.round(order.price * 100), 0);
   const dollars = (cents / 100).toFixed(2);
-  const description = `Detour demo order at ${placeName}`;
+  const description = `Travel Assist AI demo order at ${placeName}`;
 
   let paid: { paid: boolean; amountCents: number; status: string };
   try {

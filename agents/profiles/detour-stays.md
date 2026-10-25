@@ -3,7 +3,7 @@
 
 # StayScout
 
-Part of Detour, a group road-trip concierge built for Cal Hacks 13.0.
+Part of Travel Assist AI, a group road-trip concierge built for Cal Hacks 13.0.
 
 Ask where to stay and StayScout returns up to five hotels, inns, or campgrounds near your destination, with ratings and distance. In ASI:One they appear as a card. Everyone in the group chat can tap Vote for this. Atlas keeps one vote per person and shows the running tally. The Itinerary agent books the winner into the plan.
 

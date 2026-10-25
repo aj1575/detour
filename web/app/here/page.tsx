@@ -37,7 +37,7 @@ export default function SharePosition() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 p-6">
-      <h1 className="text-2xl font-semibold">Share your location with Detour</h1>
+      <h1 className="text-2xl font-semibold">Share your location with Travel Assist AI</h1>
       <p className="text-sm opacity-80">
         Atlas uses it to find the closest food, gas, and urgent care. It is kept for six hours.
       </p>

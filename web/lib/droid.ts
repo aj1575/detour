@@ -48,7 +48,7 @@ const JUDGEMENT = {
 };
 
 function prompt(text: string, town: string) {
-  return `You are the judge for Detour, a road-trip concierge on Highway 1. The group is near ${town}, CA.
+  return `You are the judge for Travel Assist AI, a road-trip concierge on Highway 1. The group is near ${town}, CA.
 Read one message and choose the single best intent. Do not answer the message. Do not use any tools.
 
 trip: starting or planning a trip, a route, a destination, or who is coming. Atlas handles it.

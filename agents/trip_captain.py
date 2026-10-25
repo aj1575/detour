@@ -1,4 +1,4 @@
-"""Start every Detour agent and register each mailbox on Agentverse.
+"""Start every Travel Assist AI agent and register each mailbox on Agentverse.
 
 Stop any copy already running, then from the repo root:
 

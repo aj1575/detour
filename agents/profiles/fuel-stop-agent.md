@@ -3,7 +3,7 @@
 
 # FuelFox
 
-Part of Detour, a Highway 1 road-trip concierge built for Cal Hacks 13.0.
+Part of Travel Assist AI, a Highway 1 road-trip concierge built for Cal Hacks 13.0.
 
 FuelFox returns up to five gas stations near Half Moon Bay on the Highway 1 route, with ratings, open status, and phone numbers.
 

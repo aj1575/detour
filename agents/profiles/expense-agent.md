@@ -3,7 +3,7 @@
 
 # Ledger
 
-Part of Detour, a Highway 1 road-trip concierge built for Cal Hacks 13.0.
+Part of Travel Assist AI, a Highway 1 road-trip concierge built for Cal Hacks 13.0.
 
 After PayPilot confirms a payment, Ledger records it as a Splitwise expense. Ask Ledger and it shows the latest split, or says nothing has been recorded yet.
 

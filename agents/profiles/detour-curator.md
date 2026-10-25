@@ -3,7 +3,7 @@
 
 # Curator
 
-Part of Detour, a group road-trip concierge built for Cal Hacks 13.0.
+Part of Travel Assist AI, a group road-trip concierge built for Cal Hacks 13.0.
 
 Everyone in the trip chat shares photos with Atlas as the trip goes on. Atlas keeps them in the trip album, stored in Convex, and measures each photo's look: its color palette, warmth, brightness, contrast, colorfulness, and sharpness.
 

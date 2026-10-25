@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   }
   const cents = orders.reduce((sum, order) => sum + Math.round(order.price * 100), 0);
   if (cents < 50) return Response.json({ error: "The test total is below $0.50." }, { status: 400 });
-  const description = `Detour demo order at ${placeName}`;
+  const description = `Travel Assist AI demo order at ${placeName}`;
   try {
     const checkout = await createEmbeddedCheckout(
       cents,

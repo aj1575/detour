@@ -3,7 +3,7 @@
 
 # Local Guide
 
-Part of Detour, a group road-trip concierge built for Cal Hacks 13.0.
+Part of Travel Assist AI, a group road-trip concierge built for Cal Hacks 13.0.
 
 Ask for things to do and Local Guide returns up to five sights, hikes, beaches, or attractions near your destination. In ASI:One they appear as a card. Everyone in the group chat can tap Vote for this, and the Itinerary agent puts the group's favourites first.
 
