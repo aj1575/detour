@@ -19,6 +19,9 @@ export async function POST(request: Request) {
   if (body?.action === "load") {
     return Response.json({ trip: await client.mutation(api.trips.loadCrew, { chat }) });
   }
+  if (body?.action === "touch") {
+    return Response.json({ tripId: await client.mutation(api.trips.touch, { chat }) });
+  }
   if (body?.action === "save" && body.stage) {
     const tripId = await client.mutation(api.trips.saveCrew, {
       chat,

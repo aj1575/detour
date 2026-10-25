@@ -101,6 +101,16 @@ function crewView(trip: Doc<"trips"> | null) {
   };
 }
 
+// The trip someone is chatting about becomes the active one, so every agent and the board use it.
+export const touch = mutation({
+  args: { chat: v.string() },
+  handler: async (ctx, { chat }) => {
+    const own = await memberTrip(ctx, chat);
+    if (own) await ctx.db.patch(own._id, { updatedAt: Date.now() });
+    return own?._id ?? null;
+  },
+});
+
 // Atlas's trip for one ASI:One sender. A new sender joins the trip in progress.
 export const loadCrew = mutation({
   args: { chat: v.string() },

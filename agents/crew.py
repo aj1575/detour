@@ -1269,6 +1269,11 @@ async def save_photos(ctx: Context, sender: str, items: list[ResourceContent]) -
 
 VERIFY = re.compile(r"\b(verify|audit)\b.*\b(agents?|actions?|ledger)\b|\bagent ids?\b|\bid cards?\b|\bwho did what\b", re.I)
 TAP_WINDOW_S = 120
+PHOTO_CAPTION = re.compile(
+    r"\b(here('?s| are)?|our|my|the|some|more|a|few|trip|road|pics?|pictures?|photos?|images?|snaps?|shots?|for|to|"
+    r"add|album|these|this|that|from|today|look|check|out|share|sharing)\b",
+    re.I,
+)
 first_taps: dict[str, tuple[str, float]] = {}  # tap key -> (message id, when) it was first accepted
 
 
@@ -1402,9 +1407,13 @@ async def captain_chat(ctx: Context, sender: str, msg: ChatMessage):
     if vote := vote_in(msg):
         await ctx.send(sender, outbound(await cast_vote(sender, *vote), end=False))
         return
+    # Whatever this person asks next works on the trip of the chat they're in, not another chat's trip.
+    with contextlib.suppress(Exception):
+        await post("/api/crew", {"action": "touch", "chat": sender}, timeout=10)
     if photos := [item for item in msg.content if isinstance(item, ResourceContent)]:
         await ctx.send(sender, outbound(await save_photos(ctx, sender, photos), end=False))
-        if not clean(msg.text()):
+        # A caption like "images" or "trip photos for the album" needs no other answer.
+        if not PHOTO_CAPTION.sub(" ", clean(msg.text())).strip(" .,!"):
             return
     if any(selection_of(item).get("action") == "start_trip" for item in msg.content):
         trip = {"stage": "details"}
